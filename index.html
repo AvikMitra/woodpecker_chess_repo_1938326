@@ -1,0 +1,1427 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Woodpecker — tactics by repetition</title>
+<meta name="theme-color" content="#15110d">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Woodpecker">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<style>
+:root{
+  --bark:#15110d; --heartwood:#211a13; --heartwood2:#1a140e;
+  --ring:#3a2e22; --ring2:#4d3c2c;
+  --sap:#ece1cf; --muted:#a8967c; --faint:#6f6049;
+  --grain:#c79a5b; --crest:#cf3b2a; --crest-dim:#8f2b20;
+  --moss:#8aa257; --moss-dim:#4f5e34;
+  --shadow:0 18px 40px -22px #000;
+  --light:#caa46e; --dark:#5c4630; /* board squares (woodgrain) */
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bark);color:var(--sap);
+  font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;-webkit-text-size-adjust:100%}
+body{min-height:100vh}
+h1,h2,h3,.serif{font-family:Iowan Old Style,Palatino,Georgia,"Times New Roman",serif}
+.mono{font-variant-numeric:tabular-nums;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+button{font:inherit;cursor:pointer;color:inherit}
+button:focus-visible,[tabindex]:focus-visible{outline:2px solid var(--grain);outline-offset:2px}
+a{color:var(--grain)}
+.wrap{max-width:1080px;margin:0 auto;padding:22px 18px 60px}
+
+/* Masthead */
+.mast{display:flex;align-items:center;gap:16px;padding:6px 2px 18px;border-bottom:1px solid var(--ring)}
+.glyph{flex:none;width:46px;height:46px}
+.mast h1{font-size:26px;margin:0;letter-spacing:.3px;font-weight:600}
+.mast .sub{color:var(--muted);font-size:13px;margin-top:2px}
+.spacer{flex:1}
+.ghost{background:transparent;border:1px solid var(--ring2);border-radius:9px;padding:8px 12px;
+  color:var(--sap);font-size:13px;transition:border-color .15s,background .15s}
+.ghost:hover{border-color:var(--grain);background:#2a2118}
+
+/* Cards / panels */
+.panel{background:linear-gradient(180deg,var(--heartwood),var(--heartwood2));
+  border:1px solid var(--ring);border-radius:14px;box-shadow:var(--shadow)}
+.eyebrow{font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--grain);font-weight:600}
+.muted{color:var(--muted)}.faint{color:var(--faint)}
+
+/* Home: set list */
+.lede{margin:22px 2px 14px}
+.lede p{color:var(--muted);max-width:62ch;line-height:1.55;margin:8px 0 0}
+.grid{display:grid;gap:16px;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));margin-top:18px}
+.setcard{padding:18px;cursor:pointer;transition:transform .15s,border-color .15s;position:relative;overflow:hidden}
+.setcard:hover{transform:translateY(-2px);border-color:var(--ring2)}
+.setcard h3{margin:.1em 0 .15em;font-size:19px}
+.setcard .meta{color:var(--muted);font-size:13px}
+.setcard .rings{position:absolute;right:-26px;top:-26px;opacity:.5}
+.bestline{display:flex;gap:14px;margin-top:14px;align-items:baseline}
+.bestline .big{font-size:22px}
+.newcard{display:flex;align-items:center;justify-content:center;border-style:dashed;
+  color:var(--grain);font-size:15px;min-height:150px}
+.newcard:hover{background:#241c14}
+
+/* Builder */
+.field{margin:16px 0}
+.field label{display:block;font-size:13px;color:var(--muted);margin-bottom:6px}
+.field input,.field select{width:100%;background:#100c08;border:1px solid var(--ring2);color:var(--sap);
+  border-radius:9px;padding:10px 12px;font:inherit}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px}
+.chip{border:1px solid var(--ring2);border-radius:999px;padding:6px 12px;font-size:12.5px;background:transparent;color:var(--muted)}
+.chip[aria-pressed=true]{background:var(--crest);border-color:var(--crest);color:#fff}
+.primary{background:var(--crest);border:1px solid var(--crest);color:#fff;border-radius:10px;
+  padding:12px 18px;font-size:15px;font-weight:600;transition:filter .15s}
+.primary:hover{filter:brightness(1.08)}.primary:disabled{opacity:.5;cursor:not-allowed}
+.dropzone{border:1px dashed var(--ring2);border-radius:11px;padding:18px;text-align:center;color:var(--muted);font-size:13.5px}
+.dropzone.drag{border-color:var(--grain);background:#241c14;color:var(--sap)}
+
+/* Trainer */
+.trainer{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:22px;margin-top:18px;align-items:start}
+@media(max-width:840px){.trainer{grid-template-columns:1fr}}
+.boardwrap{aspect-ratio:1;width:100%;max-width:560px;margin:0 auto;position:relative;
+  border-radius:10px;overflow:hidden;border:1px solid var(--ring2);box-shadow:var(--shadow)}
+.board{position:absolute;inset:0;display:grid;grid-template-columns:repeat(8,1fr);grid-template-rows:repeat(8,1fr)}
+.sqr{position:relative;display:flex;align-items:center;justify-content:center;user-select:none;
+  font-size:calc(min(11.5vw,64px)*var(--pieceScale,1));line-height:1}
+.sqr.light{background:var(--light)}.sqr.dark{background:var(--dark)}
+.board{--pieceScale:1}
+.pc{filter:drop-shadow(0 1px 1px rgba(0,0,0,.35));pointer-events:none}
+.pc.w{color:#f6f1e7}.pc.b{color:#1b140e}
+.style-solid .pc.w{-webkit-text-stroke:1.4px #17110b;paint-order:stroke fill}
+.style-letters .pc{font-family:Iowan Old Style,Palatino,Georgia,serif;font-weight:700}
+.style-letters .pc.w{-webkit-text-stroke:.8px #17110b}
+.setrow{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:9px}
+.setrow label{font-size:13px;color:var(--muted)}
+.setrow select{background:#100c08;border:1px solid var(--ring2);color:var(--sap);border-radius:8px;padding:6px 8px;font:inherit;font-size:13px}
+.setrow input[type=range]{flex:1;max-width:130px;accent-color:var(--crest)}
+.resumeRow{display:flex;align-items:center;justify-content:space-between;gap:14px;margin-top:8px;flex-wrap:wrap}
+.resumeRow .rt{font-family:Iowan Old Style,Palatino,Georgia,serif;font-size:19px}
+.resumeBtns{display:flex;gap:8px}
+.cardBtns{display:flex;gap:8px;margin-top:12px}
+.cardBtns .ghost{padding:6px 12px;font-size:13px}
+.pcsvg{width:88%;height:88%;display:block;overflow:visible}
+.pcsvg *{stroke-linejoin:round;stroke-linecap:round}
+.pcsvg.pcw *{fill:#f3efe6;stroke:#1b1b1b;stroke-width:1.5}
+.pcsvg.pcw path[stroke-width]{fill:none}
+.pcsvg.pcb *{fill:#2a2521;stroke:#000;stroke-width:1.5}
+.pcsvg.pcb path[stroke-width]{fill:none;stroke:#f3efe6}
+.pc.ghost .pcsvg{width:100%;height:100%}
+.dot2::after{content:"";position:absolute;width:30%;height:30%;border-radius:50%;background:rgba(20,15,10,.32)}
+.sqr.ring{box-shadow:inset 0 0 0 5px rgba(20,15,10,.28)}
+.cardDel{position:absolute;top:8px;right:10px;width:26px;height:26px;border:1px solid var(--ring2);
+  background:#1a140e;color:var(--muted);border-radius:7px;font-size:16px;line-height:1;opacity:0;transition:opacity .15s}
+.setcard:hover .cardDel,.setcard:focus-within .cardDel{opacity:1}
+.cardDel:hover{border-color:var(--crest);color:var(--crest)}
+.evalbar{height:12px;background:#17110b;border:1px solid var(--ring);border-radius:7px;overflow:hidden}
+.evalbar i{display:block;height:100%;width:50%;background:linear-gradient(90deg,#f3efe6,#e9dcc4);transition:width .25s}
+.linemoves{display:flex;flex-wrap:wrap;gap:4px;margin-top:8px}
+.linemoves button{font:inherit;font-size:12px;padding:3px 7px;border:1px solid var(--ring2);background:#100c08;color:var(--sap);border-radius:6px}
+.linemoves button.active{background:var(--crest);border-color:var(--crest);color:#fff}
+.sqr.sel::after{content:"";position:absolute;inset:0;background:rgba(199,154,91,.22);box-shadow:inset 0 0 0 3px rgba(199,154,91,.55)}
+.dragging .sqr.sel::after{display:none}
+.sqr.wrongtint{box-shadow:inset 0 0 0 5px rgba(207,59,42,.55)}
+.sqr.last::before{content:"";position:absolute;inset:0;background:rgba(207,59,42,.22)}
+.sqr.hint{box-shadow:inset 0 0 0 4px var(--grain)}
+.dot{position:absolute;width:26%;height:26%;border-radius:50%;background:rgba(0,0,0,.28)}
+.coord{position:absolute;font-size:10px;color:rgba(0,0,0,.45);font-weight:600}
+.coord.f{right:3px;bottom:1px}.coord.r{left:3px;top:1px}
+.flash-good{animation:fg .5s}.flash-bad{animation:fbtint .5s}
+@keyframes fbtint{0%{box-shadow:inset 0 0 0 5px rgba(207,59,42,.7)}100%{box-shadow:none}}
+@keyframes fg{0%{box-shadow:inset 0 0 0 5px var(--moss)}100%{box-shadow:none}}
+@keyframes fb{0%,100%{transform:translateX(0)}25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+@media(prefers-reduced-motion:reduce){.flash-good,.flash-bad{animation:none}}
+
+/* Side rail */
+.rail .panel{padding:16px}
+.clocks{display:flex;gap:10px}
+.clock{flex:1;background:#100c08;border:1px solid var(--ring);border-radius:10px;padding:10px 12px}
+.clock .k{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.12em}
+.clock .v{font-size:26px;margin-top:3px}
+.progressbar{height:7px;background:#100c08;border-radius:6px;overflow:hidden;margin-top:14px;border:1px solid var(--ring)}
+.progressbar i{display:block;height:100%;background:linear-gradient(90deg,var(--grain),var(--crest));width:0;transition:width .25s}
+.statline{display:flex;justify-content:space-between;font-size:13px;color:var(--muted);margin-top:8px}
+.turnpill{display:inline-block;font-size:12px;padding:4px 10px;border-radius:999px;border:1px solid var(--ring2);color:var(--muted)}
+.feedback{min-height:22px;font-size:14px;margin-top:12px;font-weight:600}
+.feedback.good{color:var(--moss)}.feedback.bad{color:var(--crest)}
+.railbtns{display:flex;gap:8px;margin-top:14px;flex-wrap:wrap}
+
+/* Summary + rings */
+.summary{margin-top:18px}
+.summary .panel{padding:24px}
+.ringsvg{display:block;margin:0 auto}
+.legend{display:flex;gap:18px;justify-content:center;flex-wrap:wrap;margin-top:10px;color:var(--muted);font-size:12.5px}
+.legend b{color:var(--sap)}
+.cyclebars{display:flex;align-items:flex-end;gap:10px;height:140px;margin:20px 8px 0}
+.cyclebars .b{flex:1;background:linear-gradient(180deg,var(--grain),var(--crest-dim));
+  border-radius:5px 5px 0 0;position:relative;min-height:4px}
+.cyclebars .b.best{background:linear-gradient(180deg,#e0b56e,var(--crest))}
+.cyclebars .b span{position:absolute;top:-19px;left:0;right:0;text-align:center;font-size:11px;color:var(--muted)}
+.cyclebars .b small{position:absolute;bottom:-20px;left:0;right:0;text-align:center;font-size:11px;color:var(--faint)}
+.tbl{width:100%;border-collapse:collapse;margin-top:14px;font-size:13.5px}
+.tbl th,.tbl td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--ring)}
+.tbl th{color:var(--muted);font-weight:500;font-size:12px;text-transform:uppercase;letter-spacing:.08em}
+.center{text-align:center}
+.hidden{display:none!important}
+.toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%);background:#2a2118;border:1px solid var(--ring2);
+  padding:11px 16px;border-radius:10px;font-size:13.5px;box-shadow:var(--shadow);z-index:50}
+.promo{position:absolute;inset:0;background:rgba(10,8,5,.86);display:flex;align-items:center;justify-content:center;gap:8px;z-index:5}
+.promo button{width:64px;height:64px;font-size:40px;background:#100c08;border:1px solid var(--ring2);border-radius:10px}
+.promo button:hover{border-color:var(--grain)}
+
+/* ── iPhone / touch ── */
+.board{touch-action:none;-webkit-user-select:none;-webkit-touch-callout:none}
+html{-webkit-tap-highlight-color:transparent}
+.wrap{padding-left:max(18px,env(safe-area-inset-left));padding-right:max(18px,env(safe-area-inset-right));
+  padding-top:max(22px,env(safe-area-inset-top));padding-bottom:max(60px,env(safe-area-inset-bottom))}
+@media (hover:none){ .cardDel{opacity:1} }
+.toast{bottom:max(26px,calc(env(safe-area-inset-bottom) + 12px))}
+.homeTools{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:18px 2px 0}
+@media(max-width:600px){
+  .wrap{padding-top:max(10px,env(safe-area-inset-top));padding-left:max(10px,env(safe-area-inset-left));padding-right:max(10px,env(safe-area-inset-right))}
+  .mast{padding-bottom:10px;gap:10px}
+  .mast .glyph{width:34px;height:34px}
+  .mast h1{font-size:21px}
+  .mast .sub{display:none}
+  #view-train .turnpill{font-size:11px}
+  #trainTitle{font-size:17px!important}
+  .trainer{margin-top:8px;gap:12px}
+  .boardwrap{border-radius:6px}
+  .rail .panel{padding:12px}
+  .clock{padding:7px 10px}.clock .v{font-size:20px}
+  .railbtns .ghost{padding:9px 11px}
+  .feedback{margin-top:8px}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="mast">
+    <svg class="glyph" viewBox="0 0 48 48" aria-hidden="true">
+      <circle cx="24" cy="24" r="22" fill="none" stroke="#3a2e22" stroke-width="1.5"/>
+      <circle cx="24" cy="24" r="16" fill="none" stroke="#4d3c2c" stroke-width="1.5"/>
+      <circle cx="24" cy="24" r="10" fill="none" stroke="#6f6049" stroke-width="1.5"/>
+      <path d="M24 7 L24 41" stroke="#15110d" stroke-width="2"/>
+      <path d="M27 13 q9 4 8 13 q-1 7 -8 9 l0 -4 q5 -2 5 -7 q0 -6 -6 -8 z" fill="#cf3b2a"/>
+      <circle cx="29" cy="17" r="1.6" fill="#15110d"/>
+    </svg>
+    <div>
+      <h1>Woodpecker</h1>
+      <div class="sub">Carve the patterns in. Same set, again, faster.</div>
+    </div>
+    <div class="spacer"></div>
+    <button class="ghost" id="homeBtn">All sets</button>
+  </header>
+
+  <!-- HOME -->
+  <section id="view-home">
+    <div class="lede">
+      <div class="eyebrow">The method</div>
+      <p>Pick a fixed set of tactics and solve it end to end, timing yourself. Then solve the
+      <em>same set in the same order</em> again — and again — until the patterns fire on sight and your
+      time roughly halves each pass. This tool keeps the set frozen and tracks every cycle.</p>
+    </div>
+    <div id="resumeBar" class="panel hidden" style="padding:16px 18px;margin:18px 2px 4px"></div>
+    <div class="grid" id="setGrid"></div>
+    <div class="homeTools">
+      <button class="ghost" id="importScan">Import bookscan output (puzzles.json)</button>
+      <input id="scanFile" type="file" accept=".json,application/json" class="hidden">
+      <span class="faint" style="font-size:12px">the .json the bookscan tool makes from your PDF — one set per chapter</span>
+    </div>
+    <div class="homeTools">
+      <button class="ghost" id="backupBtn">Back up progress</button>
+      <button class="ghost" id="restoreBtn">Restore backup</button>
+      <input id="restoreFile" type="file" accept=".json,application/json" class="hidden">
+      <span class="faint" style="font-size:12px" id="storageNote">Progress saves automatically on this device.</span>
+    </div>
+  </section>
+
+  <!-- BUILDER -->
+  <section id="view-build" class="hidden">
+    <div class="lede"><div class="eyebrow">New set</div>
+      <p class="serif" style="font-size:22px;color:var(--sap);margin:.3em 0 0">Freeze a set of puzzles</p>
+      <p>Once created, the puzzles and their order stay fixed for every cycle. That permanence is the whole point.</p>
+    </div>
+    <div class="panel" style="padding:22px;max-width:620px">
+      <div class="field"><label for="setName">Set name</label>
+        <input id="setName" placeholder="e.g. Morning 200" value=""></div>
+      <div class="field">
+        <label>Source</label>
+        <div class="chips" id="sourceChips">
+          <button class="chip" data-src="seed" aria-pressed="true">Built-in starter (16 mates)</button>
+          <button class="chip" data-src="csv" aria-pressed="false">Import Lichess CSV</button>
+        </div>
+      </div>
+      <div id="csvArea" class="hidden">
+        <div class="field">
+          <div class="dropzone" id="drop">
+            <strong>Drop <span class="mono">lichess_db_puzzle.csv</span> here</strong><br>
+            or <label style="color:var(--grain);cursor:pointer;text-decoration:underline">browse<input id="csvFile" type="file" accept=".csv" class="hidden"></label><br>
+            <span class="faint">Get the open database from database.lichess.org · use the decompressed .csv</span>
+          </div>
+        </div>
+        <div class="row2">
+          <div class="field"><label for="rMin">Min rating</label><input id="rMin" class="mono" type="number" value="800" min="400" max="3000"></div>
+          <div class="field"><label for="rMax">Max rating</label><input id="rMax" class="mono" type="number" value="1400" min="400" max="3000"></div>
+        </div>
+        <div class="field"><label>Themes (optional — match any)</label>
+          <div class="chips" id="themeChips"></div>
+        </div>
+        <div class="field"><label for="count">How many puzzles</label>
+          <input id="count" class="mono" type="number" value="100" min="5" max="3000"></div>
+        <div id="importStatus" class="muted" style="font-size:13px;min-height:18px"></div>
+      </div>
+      <div style="display:flex;gap:10px;margin-top:8px">
+        <button class="primary" id="createSet">Create set</button>
+        <button class="ghost" id="cancelBuild">Cancel</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- TRAINER -->
+  <section id="view-train" class="hidden">
+    <div style="display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;margin-top:6px">
+      <div class="eyebrow" id="trainEyebrow">Cycle 1</div>
+      <h2 id="trainTitle" style="margin:2px 0;font-size:22px"></h2>
+      <span class="spacer"></span>
+      <span class="turnpill" id="turnPill">Your move</span>
+    </div>
+    <div class="trainer">
+      <div>
+        <div class="boardwrap"><div class="board" id="board"></div><div id="promo" class="promo hidden"></div></div>
+      </div>
+      <div class="rail">
+        <div class="panel">
+          <div class="clocks">
+            <div class="clock"><div class="k">This puzzle</div><div class="v mono" id="clkPuzzle">0.0s</div></div>
+            <div class="clock"><div class="k">This cycle</div><div class="v mono" id="clkCycle">0:00</div></div>
+          </div>
+          <div class="progressbar"><i id="prog"></i></div>
+          <div class="statline"><span id="posLabel">Puzzle 1 / 1</span><span id="accLabel">0 wrong</span></div>
+          <div class="feedback" id="feedback"></div>
+          <div class="railbtns">
+            <button class="ghost" id="hintBtn">Hint</button>
+            <button class="ghost" id="solveBtn">Show solution</button>
+            <button class="ghost" id="skipBtn">Skip</button>
+          </div>
+          <div class="railbtns">
+            <button class="ghost" id="flipBtn">Flip board</button>
+            <button class="ghost" id="analyzeBtn">Analysis</button>
+            <button class="ghost" id="quitBtn">Save &amp; exit</button>
+          </div>
+          <div id="analysisPanel" class="hidden" style="margin-top:12px">
+            <div class="evalbar"><i id="evalFill"></i></div>
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-top:6px">
+              <span class="mono" id="evalText" style="font-size:15px"></span>
+              <span class="railbtns" style="margin:0">
+                <button class="ghost" id="anPrev">&lsaquo;</button>
+                <button class="ghost" id="anNext">&rsaquo;</button>
+              </span>
+            </div>
+            <div id="lineMoves" class="linemoves"></div>
+            <div id="anStatus" class="faint" style="font-size:11px;margin-top:6px"></div>
+          </div>
+        </div>
+        <div class="panel" style="margin-top:14px;padding:14px">
+          <div class="eyebrow">Appearance</div>
+          <div class="setrow"><label>Board</label>
+            <select id="optBoard">
+              <option value="wood">Wood</option><option value="green">Green</option>
+              <option value="blue">Blue</option><option value="gray">Gray</option>
+              <option value="slate">Slate</option><option value="coffee">Coffee</option>
+            </select></div>
+          <div class="setrow"><label>Pieces</label>
+            <select id="optStyle">
+              <option value="classic">Classic</option><option value="solid">Solid</option><option value="outline">Outline</option>
+              <option value="letters">Letters</option>
+            </select></div>
+          <div class="setrow"><label>Size</label>
+            <input id="optSize" type="range" min="0.7" max="1.35" step="0.05" value="1"></div>
+          <div class="setrow"><label title="Long engine lines can be cut short: the puzzle counts as solved after this many of your moves">Solve depth</label>
+            <select id="optDepth">
+              <option value="0">Full line</option><option value="3">First 3 moves</option>
+              <option value="2">First 2 moves</option><option value="1">First move only</option>
+            </select></div>
+        </div>
+        <div class="panel" style="margin-top:14px;padding:14px">
+          <div class="eyebrow">Best cycle</div>
+          <div class="bestline"><span class="big mono" id="railBest">—</span><span class="muted" id="railBestAcc"></span></div>
+          <div class="faint" style="font-size:12px;margin-top:6px" id="railLast"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SUMMARY -->
+  <section id="view-summary" class="hidden summary">
+    <div class="lede"><div class="eyebrow" id="sumEyebrow">Cycle complete</div>
+      <h2 class="serif" id="sumTitle" style="margin:.2em 0;font-size:26px"></h2></div>
+    <div class="panel">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;max-width:520px;margin:0 auto 6px">
+        <div class="clock"><div class="k">Time</div><div class="v mono" id="sumTime"></div></div>
+        <div class="clock"><div class="k">Accuracy</div><div class="v mono" id="sumAcc"></div></div>
+      </div>
+      <svg class="ringsvg" id="ringsvg" width="320" height="320" viewBox="0 0 320 320" role="img" aria-label="Growth rings, one per cycle"></svg>
+      <div class="legend" id="ringLegend"></div>
+      <div class="cyclebars" id="cyclebars"></div>
+      <table class="tbl" id="cycleTbl"></table>
+      <div class="center" style="margin-top:22px;display:flex;gap:10px;justify-content:center;flex-wrap:wrap">
+        <button class="primary" id="nextCycle">Start next cycle</button>
+        <button class="ghost" id="reviewBtn">Review mistakes</button>
+        <button class="ghost" id="backHome">Back to sets</button>
+      </div>
+    </div>
+  </section>
+</div>
+<div id="toast" class="toast hidden"></div>
+
+<script>
+const SEED_PUZZLES = [{"id": "seed0001", "fen": "K7/8/3Q4/8/8/4k3/6Q1/8 w - - 0 1", "moves": ["d6d2"], "rating": 653, "themes": "mateIn1"}, {"id": "seed0002", "fen": "8/8/8/8/8/3Q4/4RK2/k7 w - - 0 1", "moves": ["d3d1"], "rating": 742, "themes": "mateIn1"}, {"id": "seed0003", "fen": "8/6R1/8/8/8/7k/1R6/7K w - - 0 1", "moves": ["b2h2"], "rating": 568, "themes": "mateIn1"}, {"id": "seed0004", "fen": "1k6/7Q/8/8/7K/8/5Q2/8 w - - 0 1", "moves": ["f2f8"], "rating": 668, "themes": "mateIn1"}, {"id": "seed0005", "fen": "8/4Q3/8/8/2K5/8/2k5/6Q1 w - - 0 1", "moves": ["e7e2"], "rating": 615, "themes": "mateIn1"}, {"id": "seed0006", "fen": "8/8/8/Q7/2k5/8/8/4QK2 w - - 0 1", "moves": ["e1c3"], "rating": 653, "themes": "mateIn1"}, {"id": "seed0007", "fen": "5k1K/4R3/8/8/8/8/Q7/8 w - - 0 1", "moves": ["a2f7"], "rating": 525, "themes": "mateIn1"}, {"id": "seed0008", "fen": "5k2/Q7/8/8/8/8/8/Q5K1 w - - 0 1", "moves": ["a1h8"], "rating": 716, "themes": "mateIn1"}, {"id": "seed0009", "fen": "8/8/6Q1/8/1R6/8/k7/5K2 w - - 0 1", "moves": ["g6a6"], "rating": 709, "themes": "mateIn1"}, {"id": "seed0010", "fen": "4k3/8/4K3/8/3R4/8/8/6Q1 w - - 0 1", "moves": ["g1g8"], "rating": 682, "themes": "mateIn1"}, {"id": "seed0011", "fen": "8/6K1/7Q/8/2R5/8/8/3k4 w - - 0 1", "moves": ["h6h2", "d1e1", "c4c1"], "rating": 1055, "themes": "mateIn2"}, {"id": "seed0012", "fen": "8/3Q1K2/8/8/7k/4R3/8/8 w - - 0 1", "moves": ["f7f6", "h4h5", "d7h3"], "rating": 1028, "themes": "mateIn2"}, {"id": "seed0013", "fen": "7K/8/2Q5/8/R7/8/7k/8 w - - 0 1", "moves": ["a4g4", "h2h3", "c6g2"], "rating": 1062, "themes": "mateIn2"}, {"id": "seed0014", "fen": "4R3/8/8/8/R7/8/8/K4k2 w - - 0 1", "moves": ["a4a2", "f1g1", "e8e1"], "rating": 1211, "themes": "mateIn2"}, {"id": "seed0015", "fen": "2k5/8/8/8/8/6Q1/4R3/5K2 w - - 0 1", "moves": ["e2e7", "c8d8", "g3c7"], "rating": 1239, "themes": "mateIn2"}, {"id": "seed0016", "fen": "8/8/8/K7/7k/1R6/2R5/8 w - - 0 1", "moves": ["c2g2", "h4h5", "b3h3"], "rating": 1282, "themes": "mateIn2"}];
+</script>
+<script>
+// ── Board engine (verified against python-chess) ────────────────────────────
+// Applies known-legal UCI moves and infers special moves from geometry.
+const FILES = 'abcdefgh';
+function sqIdx(s){ return (s.charCodeAt(1)-49)*8 + (s.charCodeAt(0)-97); } // a1=0
+function idxName(i){ return FILES[i%8] + (Math.floor(i/8)+1); }
+function parseFEN(fen){
+  const [place, turn, , epField] = fen.trim().split(/\s+/);
+  const sq = new Array(64).fill(null);
+  let rank = 7, file = 0;
+  for(const c of place){
+    if(c === '/'){ rank--; file = 0; }
+    else if(c >= '1' && c <= '8'){ file += +c; }
+    else { sq[rank*8 + file] = c; file++; }
+  }
+  const ep = (epField && /^[a-h][36]$/.test(epField)) ? sqIdx(epField) : null;
+  return { sq, turn: turn||'w', ep };
+}
+function applyUci(state, uci){
+  const sq = state.sq.slice();
+  const from = sqIdx(uci.slice(0,2)), to = sqIdx(uci.slice(2,4));
+  const promo = uci[4];
+  let piece = sq[from];
+  if(!piece) return { sq, turn: state.turn==='w'?'b':'w', ep:null };
+  const isWhite = piece === piece.toUpperCase();
+  const fromFile = from%8, toFile = to%8, fromRank = Math.floor(from/8);
+  const isPawn = piece==='P' || piece==='p';
+  const isKing = piece==='K' || piece==='k';
+  if(isPawn && fromFile !== toFile && sq[to] === null){      // en passant
+    sq[fromRank*8 + toFile] = null;
+  }
+  if(isKing && Math.abs(toFile-fromFile) === 2){             // castling
+    const rank = fromRank*8;
+    if(toFile === 6){ sq[rank+5] = sq[rank+7]; sq[rank+7] = null; }
+    else if(toFile === 2){ sq[rank+3] = sq[rank+0]; sq[rank+0] = null; }
+  }
+  if(promo){ piece = isWhite ? promo.toUpperCase() : promo.toLowerCase(); }
+  sq[to] = piece; sq[from] = null;
+  // remember the en-passant square after a double pawn push
+  const ep = (isPawn && Math.abs(to-from) === 16) ? (from+to)/2 : null;
+  return { sq, turn: state.turn==='w'?'b':'w', ep };
+}
+// Glyphs
+const GLYPH = {K:'\u2654',Q:'\u2655',R:'\u2656',B:'\u2657',N:'\u2658',P:'\u2659',
+               k:'\u265A',q:'\u265B',r:'\u265C',b:'\u265D',n:'\u265E',p:'\u265F'};
+const GLYPH_SOLID = {K:'\u265A',Q:'\u265B',R:'\u265C',B:'\u265D',N:'\u265E',P:'\u265F',
+                     k:'\u265A',q:'\u265B',r:'\u265C',b:'\u265D',n:'\u265E',p:'\u265F'};
+const GLYPH_LETTER = {K:'K',Q:'Q',R:'R',B:'B',N:'N',P:'P',k:'K',q:'Q',r:'R',b:'B',n:'N',p:'P'};
+const BOARD_THEMES = {
+  wood:{light:'#caa46e',dark:'#5c4630'}, green:{light:'#eeeed2',dark:'#769656'},
+  blue:{light:'#dee3e6',dark:'#8ca2ad'}, gray:{light:'#e0e0e0',dark:'#8f8f8f'},
+  slate:{light:'#c7ccd1',dark:'#3f4a54'}, coffee:{light:'#e9d8b8',dark:'#7a5230'}};
+
+// ── Legal move generation (for drag targets + dots) ─────────────────────────
+function _wc(ch){ return ch===ch.toUpperCase(); }
+const _DIRB=[[1,1],[1,-1],[-1,1],[-1,-1]], _DIRR=[[1,0],[-1,0],[0,1],[0,-1]];
+const _DIR={B:_DIRB,R:_DIRR,Q:_DIRB.concat(_DIRR)};
+const _KN=[[1,2],[2,1],[-1,2],[-2,1],[1,-2],[2,-1],[-1,-2],[-2,-1]];
+const _KM=_DIRB.concat(_DIRR);
+const _onb=(f,r)=>f>=0&&f<8&&r>=0&&r<8;
+function _attacked(sq,byWhite,arr){
+  const f=sq%8,r=(sq/8|0), dir=byWhite?1:-1;
+  for(const df of [-1,1]){const af=f+df,ar=r-dir; if(_onb(af,ar)&&arr[ar*8+af]===(byWhite?'P':'p'))return true;}
+  for(const [df,dr] of _KN){const af=f+df,ar=r+dr; if(_onb(af,ar)&&arr[ar*8+af]===(byWhite?'N':'n'))return true;}
+  for(const [df,dr] of _KM){const af=f+df,ar=r+dr; if(_onb(af,ar)&&arr[ar*8+af]===(byWhite?'K':'k'))return true;}
+  for(const [df,dr] of _DIRB){let af=f+df,ar=r+dr; while(_onb(af,ar)){const p=arr[ar*8+af]; if(p){if(_wc(p)===byWhite&&'BQ'.includes(p.toUpperCase()))return true; break;} af+=df;ar+=dr;}}
+  for(const [df,dr] of _DIRR){let af=f+df,ar=r+dr; while(_onb(af,ar)){const p=arr[ar*8+af]; if(p){if(_wc(p)===byWhite&&'RQ'.includes(p.toUpperCase()))return true; break;} af+=df;ar+=dr;}}
+  return false;
+}
+function _kingIdx(arr,white){ const k=white?'K':'k'; for(let i=0;i<64;i++) if(arr[i]===k) return i; return -1; }
+function _applyArr(arr,from,to){
+  const a=arr.slice(), p=a[from], white=_wc(p), ff=from%8,tf=to%8,fr=(from/8|0);
+  if((p==='P'||p==='p')&&ff!==tf&&!a[to]) a[fr*8+tf]=null;                 // ep
+  if((p==='K'||p==='k')&&Math.abs(tf-ff)===2){ const rk=fr*8;
+    if(tf===6){a[rk+5]=a[rk+7];a[rk+7]=null;} else {a[rk+3]=a[rk+0];a[rk+0]=null;} }
+  a[to]=p; a[from]=null; return a;
+}
+function _pseudo(state,from){
+  const arr=state.sq, p=arr[from]; if(!p) return [];
+  const white=_wc(p), f=from%8,r=(from/8|0), T=p.toUpperCase(), out=[];
+  const add=(af,ar)=>{ if(!_onb(af,ar))return false; const q=arr[ar*8+af];
+    if(!q){out.push(ar*8+af);return true;} if(_wc(q)!==white)out.push(ar*8+af); return false; };
+  if(T==='P'){
+    const dir=white?1:-1, sr=white?1:6;
+    if(_onb(f,r+dir)&&!arr[(r+dir)*8+f]){ out.push((r+dir)*8+f);
+      if(r===sr&&!arr[(r+2*dir)*8+f]) out.push((r+2*dir)*8+f); }
+    for(const df of [-1,1]){const af=f+df,ar=r+dir; if(_onb(af,ar)){const q=arr[ar*8+af];
+      if(q&&_wc(q)!==white)out.push(ar*8+af);
+      else if(!q && state.ep===ar*8+af) out.push(ar*8+af);}}   // en passant
+  } else if(T==='N'){ for(const [df,dr] of _KN) add(f+df,r+dr); }
+  else if(T==='K'){ for(const [df,dr] of _KM) add(f+df,r+dr);
+    const rank=white?0:7, home=rank*8+4, opp=!white;
+    if(from===home&&!_attacked(home,opp,arr)){
+      if(arr[rank*8+7]===(white?'R':'r')&&!arr[rank*8+5]&&!arr[rank*8+6]&&!_attacked(rank*8+5,opp,arr)&&!_attacked(rank*8+6,opp,arr)) out.push(rank*8+6);
+      if(arr[rank*8+0]===(white?'R':'r')&&!arr[rank*8+1]&&!arr[rank*8+2]&&!arr[rank*8+3]&&!_attacked(rank*8+3,opp,arr)&&!_attacked(rank*8+2,opp,arr)) out.push(rank*8+2);
+    }
+  } else { for(const [df,dr] of _DIR[T]){ let af=f+df,ar=r+dr; while(add(af,ar)){af+=df;ar+=dr;} } }
+  return out;
+}
+function legalTargets(state,from){
+  const p=state.sq[from]; if(!p) return [];
+  const white=_wc(p); if((state.turn==='w')!==white) return [];
+  const res=[];
+  for(const to of _pseudo(state,from)){
+    const na=_applyArr(state.sq,from,to), k=_kingIdx(na,white);
+    if(k>=0 && !_attacked(k,!white,na)) res.push(to);
+  }
+  return res;
+}
+// true if the side to move in `state` is checkmated
+function isCheckmate(state){
+  const white = state.turn==='w';
+  const k=_kingIdx(state.sq,white); if(k<0) return false;
+  if(!_attacked(k,!white,state.sq)) return false;
+  for(let i=0;i<64;i++){ const p=state.sq[i];
+    if(p && _wc(p)===white && legalTargets(state,i).length) return false; }
+  return true;
+}
+
+// ── Original vector piece set ("classic" style; drawn here, not copied) ──────
+const _P = {
+  p:'<circle cx="22.5" cy="17" r="6"/><path d="M15 34c0-6 5-8 7.5-8s7.5 2 7.5 8z"/><rect x="13" y="33" width="19" height="4.5" rx="2"/>',
+  r:'<path d="M13 13h4v3h3v-3h5v3h3v-3h4v7l-3 3v9l3 3v3H13v-3l3-3v-9l-3-3z"/><rect x="12" y="37" width="21" height="4.5" rx="1.5"/>',
+  n:'<path d="M22 11c6 0 12 4 12 15v11H15c0-6 2-8 5-11 1.5-1.5-4 .5-6-2-1.5-2 1-5 2-6 2-2 1-4 0-5 3-2 6-2 8-2 .5-2 3-2 3-2 .3-1-.5-2-1-2 1-1 2-1 3-.5z"/><rect x="13" y="37" width="21" height="4.5" rx="1.5"/>',
+  b:'<circle cx="22.5" cy="8.3" r="2.3"/><path d="M22.5 10.5c7 1.5 9.5 8 6.8 13.2-1.7 3.2-4.4 4.9-6.8 5.9-2.4-1-5.1-2.7-6.8-5.9-2.7-5.2-.2-11.7 6.8-13.2z"/><path d="M22.5 13.2l1.9 5.6" stroke-width="1.3"/><rect x="15" y="29" width="15" height="3.3" rx="1.6"/><path d="M14 37.4c2-3.6 15-3.6 17 0z"/><rect x="12.5" y="37.2" width="20" height="4" rx="1.6"/>',
+  q:'<circle cx="9" cy="14" r="2.4"/><circle cx="16" cy="11" r="2.4"/><circle cx="22.5" cy="10" r="2.6"/><circle cx="29" cy="11" r="2.4"/><circle cx="36" cy="14" r="2.4"/><path d="M9 15l3 18h21l3-18-6 9-3-11-4.5 12L18 13l-3 11z"/><rect x="12" y="33" width="21" height="4" rx="1.5"/><rect x="11" y="37" width="23" height="4.5" rx="1.6"/>',
+  k:'<path d="M22.5 6v6M19.5 8.5h6" stroke-width="2"/><path d="M22.5 13c4 0 7 3 7 7 0 3-2 5-3.5 6l-3.5 2-3.5-2c-1.5-1-3.5-3-3.5-6 0-4 3-7 7-7z"/><path d="M12 26c5-4 16-4 21 0l-2 10H14z"/><rect x="11" y="37" width="23" height="4.5" rx="1.6"/>'
+};
+const PIECES = {};
+for(const k of ['p','r','n','b','q','k']){ PIECES[k.toUpperCase()]=_P[k]; PIECES[k]=_P[k]; }
+function pieceSVG(piece){
+  const white = piece===piece.toUpperCase();
+  return `<svg class="pcsvg ${white?'pcw':'pcb'}" viewBox="0 0 45 45" aria-hidden="true">${PIECES[piece]}</svg>`;
+}
+
+</script>
+<script>
+// ── Tiny IndexedDB layer ────────────────────────────────────────────────────
+const DB = (()=>{
+  let dbp;
+  function open(){
+    if(dbp) return dbp;
+    dbp = new Promise((res,rej)=>{
+      const r = indexedDB.open('woodpecker', 1);
+      r.onupgradeneeded = ()=> r.result.createObjectStore('sets', {keyPath:'id'});
+      r.onsuccess = ()=> res(r.result);
+      r.onerror = ()=> rej(r.error);
+    });
+    return dbp;
+  }
+  function tx(mode, fn){
+    return open().then(db => new Promise((res,rej)=>{
+      const t = db.transaction('sets', mode);
+      const store = t.objectStore('sets');
+      const out = fn(store);
+      t.oncomplete = ()=> res(out && out._r !== undefined ? out._r : out);
+      t.onerror = ()=> rej(t.error);
+    }));
+  }
+  return {
+    all(){ return tx('readonly', s=>{ const o={}; s.getAll().onsuccess=e=>o._r=e.target.result; return o; }); },
+    get(id){ return tx('readonly', s=>{ const o={}; s.get(id).onsuccess=e=>o._r=e.target.result; return o; }); },
+    put(set){ return tx('readwrite', s=>{ s.put(set); }); },
+    del(id){ return tx('readwrite', s=>{ s.delete(id); }); },
+  };
+})();
+
+// ── helpers ─────────────────────────────────────────────────────────────────
+const $ = sel => document.querySelector(sel);
+const el = (tag, cls, txt)=>{ const e=document.createElement(tag); if(cls)e.className=cls; if(txt!=null)e.textContent=txt; return e; };
+const esc = s=> String(s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const uid = ()=> (crypto.randomUUID ? crypto.randomUUID() : 'id'+Date.now()+Math.random());
+function fmtMs(ms){
+  const s = ms/1000;
+  if(s < 60) return s.toFixed(1)+'s';
+  const m = Math.floor(s/60), r = Math.round(s%60);
+  return m+':'+String(r).padStart(2,'0');
+}
+function fmtClock(ms){ const s=Math.floor(ms/1000); return Math.floor(s/60)+':'+String(s%60).padStart(2,'0'); }
+let toastT;
+function toast(msg){
+  const t=$('#toast'); t.textContent=msg; t.classList.remove('hidden');
+  clearTimeout(toastT); toastT=setTimeout(()=>t.classList.add('hidden'), 2200);
+}
+function shuffle(a){ for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; }
+
+// ── view router ─────────────────────────────────────────────────────────────
+const VIEWS = ['home','build','train','summary'];
+function show(v){
+  VIEWS.forEach(x=> $('#view-'+x).classList.toggle('hidden', x!==v));
+  window.scrollTo(0,0);
+}
+
+// ── HOME ────────────────────────────────────────────────────────────────────
+async function renderHome(){
+  const sets = (await DB.all()) || [];
+  sets.sort((a,b)=> (b.lastPlayed||b.createdAt) - (a.lastPlayed||a.createdAt));
+  // resume banner: sets with an in-progress cycle, most recent first
+  const bar = $('#resumeBar'); bar.innerHTML='';
+  const inProgress = sets.filter(s=> s.progress);
+  if(inProgress.length){
+    const s = inProgress[0];
+    const solved = (s.progress.perPuzzle||[]).filter(p=>p&&p.clean).length;
+    const done = s.progress.pos||0;
+    bar.classList.remove('hidden');
+    bar.innerHTML = `<div class="eyebrow">Jump back in</div>
+      <div class="resumeRow">
+        <div><div class="rt">${esc(s.name)}</div>
+          <div class="muted" style="font-size:13px">Cycle ${s.cycles.length+1} · puzzle ${done+1} / ${s.puzzles.length} · ${solved} solved clean</div></div>
+        <div class="resumeBtns">
+          <button class="primary" data-continue="${s.id}">Continue</button>
+          <button class="ghost" data-restart="${s.id}">Restart cycle</button>
+        </div>
+      </div>`;
+    bar.querySelector('[data-continue]').onclick = ()=> openSet(s.id);
+    bar.querySelector('[data-restart]').onclick = ()=> restartCycle(s.id);
+  } else { bar.classList.add('hidden'); }
+
+  const grid = $('#setGrid'); grid.innerHTML='';
+  const add = el('div','panel setcard newcard'); add.textContent='+ New set';
+  add.tabIndex=0; add.onclick=startBuild; add.onkeydown=e=>{if(e.key==='Enter')startBuild();};
+  grid.appendChild(add);
+  for(const set of sets){
+    const c = el('div','panel setcard'); c.tabIndex=0;
+    const best = bestCycle(set);
+    const prog = set.progress;
+    c.innerHTML = `<svg class="rings" width="120" height="120" viewBox="0 0 120 120">
+        ${[44,32,20,9].map((r,i)=>`<circle cx="92" cy="28" r="${r}" fill="none" stroke="${i===0?'#3a2e22':'#2c2419'}" stroke-width="1.4"/>`).join('')}
+      </svg>`;
+    c.appendChild(el('h3','',set.name));
+    c.appendChild(el('div','meta', `${set.puzzles.length} puzzles · ${set.cycles.length} cycle${set.cycles.length===1?'':'s'} done`));
+    const bl = el('div','bestline');
+    if(prog){
+      const solved=(prog.perPuzzle||[]).filter(p=>p&&p.clean).length;
+      bl.appendChild(el('span','big mono', `${prog.pos||0}/${set.puzzles.length}`));
+      bl.appendChild(el('span','muted', `in progress · ${solved} clean`));
+    } else if(best){
+      bl.appendChild(el('span','big mono', fmtMs(best.ms)));
+      bl.appendChild(el('span','muted', `best · ${Math.round(best.acc*100)}% clean`));
+    } else {
+      bl.appendChild(el('span','muted','Not started — begin cycle 1'));
+    }
+    c.appendChild(bl);
+    const btns = el('div','cardBtns');
+    const cont = el('button','ghost', prog?'Continue':'Start');
+    cont.onclick = ev=>{ ev.stopPropagation(); openSet(set.id); };
+    btns.appendChild(cont);
+    if(prog || set.cycles.length){
+      const rs = el('button','ghost','Restart cycle');
+      rs.onclick = ev=>{ ev.stopPropagation(); restartCycle(set.id); };
+      btns.appendChild(rs);
+    }
+    c.appendChild(btns);
+    const del = el('button','cardDel','\u00d7'); del.title='Delete set';
+    del.onclick = ev=>{ ev.stopPropagation(); deleteSet(set.id, set.name); };
+    c.appendChild(del);
+    c.onclick = ()=> openSet(set.id);
+    c.onkeydown = e=>{ if(e.key==='Enter') openSet(set.id); };
+    grid.appendChild(c);
+  }
+}
+async function restartCycle(id){
+  const set = await DB.get(id); if(!set) return;
+  if(set.progress && !confirm('Discard the current in-progress cycle and start it over?')) return;
+  set.progress = null; set.lastPlayed = Date.now(); await DB.put(set);
+  S = set; startCycle(null);
+}
+async function deleteSet(id, name){
+  if(!confirm(`Delete "${name}"? This removes the set and its progress.`)) return;
+  await DB.del(id); toast('Set deleted'); renderHome();
+}
+function bestCycle(set){
+  if(!set.cycles.length) return null;
+  let b=null;
+  for(const cy of set.cycles){ const acc=cy.total?cy.solvedClean/cy.total:0;
+    if(!b || cy.ms < b.ms) b={ms:cy.ms, acc, n:cy.n}; }
+  return b;
+}
+
+// ── BUILDER ─────────────────────────────────────────────────────────────────
+const COMMON_THEMES = ['mateIn1','mateIn2','fork','pin','skewer','discoveredAttack',
+  'sacrifice','deflection','backRankMate','hangingPiece','endgame','middlegame'];
+let buildSource='seed', importedPuzzles=null, selectedThemes=new Set();
+
+function startBuild(){
+  buildSource='seed'; importedPuzzles=null; selectedThemes.clear();
+  $('#setName').value='';
+  $('#csvArea').classList.add('hidden');
+  $('#sourceChips').querySelectorAll('.chip').forEach(c=> c.setAttribute('aria-pressed', c.dataset.src==='seed'));
+  $('#importStatus').textContent='';
+  const tc=$('#themeChips'); tc.innerHTML='';
+  COMMON_THEMES.forEach(t=>{
+    const b=el('button','chip',t); b.setAttribute('aria-pressed','false');
+    b.onclick=()=>{ const on=b.getAttribute('aria-pressed')==='true'; b.setAttribute('aria-pressed', !on);
+      if(on) selectedThemes.delete(t); else selectedThemes.add(t); };
+    tc.appendChild(b);
+  });
+  show('build');
+}
+$('#sourceChips').onclick = e=>{
+  const chip = e.target.closest('.chip'); if(!chip) return;
+  buildSource = chip.dataset.src;
+  $('#sourceChips').querySelectorAll('.chip').forEach(c=> c.setAttribute('aria-pressed', c===chip));
+  $('#csvArea').classList.toggle('hidden', buildSource!=='csv');
+};
+$('#cancelBuild').onclick = ()=>{ show('home'); };
+
+// CSV streaming import with early stop
+async function importCsv(file, opts){
+  const {rMin, rMax, count, themes, onProgress} = opts;
+  const reader = file.stream().pipeThrough(new TextDecoderStream()).getReader();
+  let buf='', scanned=0, header=true;
+  const found=[];
+  while(true){
+    const {value, done} = await reader.read();
+    if(done) break;
+    buf += value;
+    let nl;
+    while((nl = buf.indexOf('\n')) >= 0){
+      let line = buf.slice(0,nl); buf = buf.slice(nl+1);
+      if(line.endsWith('\r')) line=line.slice(0,-1);
+      if(!line) continue;
+      if(header && line.startsWith('PuzzleId')){ header=false; continue; }
+      header=false;
+      scanned++;
+      // we only need fields 0..3 and 7
+      const parts = line.split(',');
+      if(parts.length < 8) continue;
+      const rating = +parts[3];
+      if(rating < rMin || rating > rMax) continue;
+      const lineThemes = parts[7] ? parts[7].split(' ') : [];
+      if(themes.length && !themes.some(t=> lineThemes.includes(t))) continue;
+      found.push({ id:parts[0], fen:parts[1], moves:parts[2].split(' '),
+                   rating, themes:parts[7]||'' });
+      if(found.length % 25 === 0 && onProgress) onProgress(found.length, scanned);
+      if(found.length >= count){ await reader.cancel(); return found; }
+    }
+    if(onProgress) onProgress(found.length, scanned);
+  }
+  return found;
+}
+
+function wireDrop(){
+  const dz=$('#drop'), input=$('#csvFile');
+  input.onchange = ()=> input.files[0] && handleCsv(input.files[0]);
+  ['dragover','dragenter'].forEach(ev=> dz.addEventListener(ev, e=>{e.preventDefault();dz.classList.add('drag');}));
+  ['dragleave','drop'].forEach(ev=> dz.addEventListener(ev, e=>{e.preventDefault();dz.classList.remove('drag');}));
+  dz.addEventListener('drop', e=>{ const f=e.dataTransfer.files[0]; if(f) handleCsv(f); });
+}
+let pendingFile=null;
+function handleCsv(file){ pendingFile=file; $('#importStatus').textContent = `Ready: ${file.name} (${(file.size/1e6).toFixed(0)} MB). Set filters, then Create set.`; }
+
+$('#createSet').onclick = async ()=>{
+  const name = $('#setName').value.trim() || (buildSource==='seed' ? 'Starter mates' : 'Imported set');
+  let puzzles;
+  if(buildSource==='seed'){
+    puzzles = SEED_PUZZLES.map(p=>({...p, moves:p.moves.slice()}));
+    finalizeSet(name, puzzles, true, 'seed');
+  } else {
+    if(!pendingFile){ toast('Choose a CSV file first'); return; }
+    const rMin=+$('#rMin').value, rMax=+$('#rMax').value, count=+$('#count').value;
+    const btn=$('#createSet'); btn.disabled=true; btn.textContent='Importing…';
+    try{
+      puzzles = await importCsv(pendingFile, {rMin,rMax,count, themes:[...selectedThemes],
+        onProgress:(f,s)=> $('#importStatus').textContent=`Found ${f} / ${count} · scanned ${s.toLocaleString()} rows…`});
+      if(!puzzles.length){ toast('No puzzles matched those filters'); btn.disabled=false; btn.textContent='Create set'; return; }
+      shuffle(puzzles);
+      finalizeSet(name, puzzles, false, 'lichess');
+    }catch(err){
+      console.error(err); toast('Import failed — is it the decompressed .csv?');
+      btn.disabled=false; btn.textContent='Create set';
+    }
+  }
+};
+async function finalizeSet(name, puzzles, solverFirst, source){
+  const set = { id:uid(), name, createdAt:Date.now(), source, solverFirst,
+    puzzles, cycles:[], progress:null };
+  await DB.put(set);
+  const btn=$('#createSet'); btn.disabled=false; btn.textContent='Create set';
+  toast(`Created “${name}” with ${puzzles.length} puzzles`);
+  openSet(set.id);
+}
+
+// ── TRAINER ─────────────────────────────────────────────────────────────────
+let S = null;           // active set
+let T = null;           // active training state
+
+async function openSet(id){
+  S = await DB.get(id);
+  if(!S){ toast('Set not found'); return; }
+  S.lastPlayed = Date.now(); DB.put(S);
+  startCycle(S.progress);   // resume if mid-cycle, else fresh
+}
+
+function startCycle(resume){
+  const cycleIndex = S.cycles.length;
+  T = {
+    cycleIndex,
+    pos: resume ? resume.pos : 0,
+    perPuzzle: resume ? resume.perPuzzle : [],
+    wrong: resume ? resume.wrong : 0,
+    committedMs: resume ? resume.committedMs : 0,
+    resumeStart: performance.now(),
+    flip: false,
+    active: true,
+    // per-puzzle runtime (set in present)
+  };
+  $('#trainTitle').textContent = S.name;
+  $('#trainEyebrow').textContent = 'Cycle ' + (cycleIndex+1);
+  show('train');
+  renderRail();
+  startClock();
+  present();
+}
+
+function cycleElapsed(){ return T.committedMs + (performance.now() - T.resumeStart); }
+let clockTimer;
+function startClock(){
+  clearInterval(clockTimer);
+  clockTimer = setInterval(()=>{
+    $('#clkCycle').textContent = fmtClock(cycleElapsed());
+    if(T.puzzleStart!=null) $('#clkPuzzle').textContent = ((performance.now()-T.puzzleStart)/1000).toFixed(1)+'s';
+  }, 100);
+}
+
+function present(){
+  if(T.an){ T.an=null; T._snap=null; const ap=$('#analysisPanel'); if(ap) ap.classList.add('hidden'); const ab=$('#analyzeBtn'); if(ab) ab.textContent='Analysis'; }
+  const p = S.puzzles[T.pos];
+  T.puzzle = p;
+  T.state = parseFEN(p.fen);
+  T.line = p.moves;
+  T.mistakes = 0;
+  T.sel = null; T.legal = null;
+  T.lastMove = null;
+  T.hintSq = null;
+  T.busy = false;
+  T.gen = (T.gen||0) + 1;          // invalidates timers from the previous puzzle
+  T.assisted = false;
+  T.solved = false;
+  // opponent premove for lichess puzzles
+  if(S.solverFirst){ T.mp = 0; }
+  else { T.state = applyUci(T.state, T.line[0]); T.lastMove=[sqIdx(T.line[0].slice(0,2)), sqIdx(T.line[0].slice(2,4))]; T.mp = 1; }
+  // optional cut-off for long engine lines ("Solve depth")
+  const depth = +SETTINGS.depth || 0;
+  T.end = depth>0 ? Math.min(T.line.length, T.mp + 2*depth - 1) : T.line.length;
+  T.solverColor = T.state.turn;            // side to move now = solver
+  T.flip = (T.solverColor === 'b');
+  T.puzzleStart = performance.now();
+  $('#posLabel').textContent = `Puzzle ${T.pos+1} / ${S.puzzles.length}`;
+  $('#prog').style.width = (T.pos / S.puzzles.length * 100) + '%';
+  $('#accLabel').textContent = `${T.wrong} unsolved`;
+  $('#feedback').textContent=''; $('#feedback').className='feedback';
+  setTurn(true);
+  drawBoard();
+}
+
+function setTurn(yours){
+  $('#turnPill').textContent = yours ? 'Your move' : '…';
+}
+
+function boardOrder(){
+  const order=[];
+  if(!T.flip){ for(let r=7;r>=0;r--) for(let f=0;f<8;f++) order.push(r*8+f); }
+  else { for(let r=0;r<8;r++) for(let f=7;f>=0;f--) order.push(r*8+f); }
+  return order;
+}
+function drawBoard(){
+  const b=$('#board'); b.innerHTML='';
+  const order=boardOrder();
+  order.forEach((idx,disp)=>{
+    const f=idx%8, r=Math.floor(idx/8);
+    const sq=el('div','sqr '+((f+r)%2? 'light':'dark'));
+    sq.dataset.idx=idx;
+    if(T.sel===idx) sq.classList.add('sel');
+    if(T.lastMove && (T.lastMove[0]===idx || T.lastMove[1]===idx)) sq.classList.add('last');
+    if(T.hintSq===idx) sq.classList.add('hint');
+    const piece=T.state.sq[idx];
+    if(piece){
+      if(SETTINGS.style==='classic'){
+        const w=el('span','pc '+(piece===piece.toUpperCase()?'w':'b')); w.innerHTML=pieceSVG(piece); sq.appendChild(w);
+      } else {
+        const gm = SETTINGS.style==='solid'?GLYPH_SOLID:(SETTINGS.style==='letters'?GLYPH_LETTER:GLYPH);
+        sq.appendChild(el('span','pc '+(piece===piece.toUpperCase()?'w':'b'), gm[piece]));
+      }
+    }
+    if(T.legal && T.legal.has(idx)) sq.classList.add(piece?'ring':'dot2');
+    // coordinates on edges
+    const col = disp%8, row=Math.floor(disp/8);
+    if(row===7){ const c=el('span','coord f', FILES[f]); sq.appendChild(c); }
+    if(col===0){ const c=el('span','coord r', r+1); sq.appendChild(c); }
+    sq.addEventListener('pointerdown', e=> beginInteract(idx, e));
+    b.appendChild(sq);
+  });
+}
+
+function squareFromPoint(x,y){
+  const el2=document.elementFromPoint(x,y); if(!el2) return null;
+  const s=el2.closest('.sqr'); return s? +s.dataset.idx : null;
+}
+function selectSquare(idx){
+  T.sel=idx; T.legal=new Set(legalTargets(T.state, idx)); drawBoard();
+}
+function clearSel(){ T.sel=null; T.legal=null; drawBoard(); }
+let _drag=null;
+function beginInteract(idx, ev){
+  if(_drag) return;
+  if((T.solved || T.busy) && !T.an) return;
+  ev.preventDefault();
+  const side = T.an ? T.state.turn : T.solverColor;
+  const piece=T.state.sq[idx];
+  const mine = piece && (piece===piece.toUpperCase())===(side==='w');
+  // if a piece is selected and this is a legal target, move
+  if(T.sel!=null && idx!==T.sel && T.legal && T.legal.has(idx)){ doMove(T.sel, idx); return; }
+  if(!mine){ clearSel(); return; }
+  selectSquare(idx);
+  // start drag ghost
+  const sq=[...$('#board').children].find(c=>+c.dataset.idx===idx);
+  const pcEl=sq && sq.querySelector('.pc'); if(!pcEl) return;
+  const rect=$('#board').getBoundingClientRect(); const cell=rect.width/8;
+  const ghost=pcEl.cloneNode(true); ghost.className='pc ghost '+(piece===piece.toUpperCase()?'w':'b');
+  ghost.style.cssText=`position:fixed;width:${cell}px;height:${cell}px;pointer-events:none;z-index:60;display:flex;align-items:center;justify-content:center;font-size:calc(${cell}px*.78*var(--pieceScale,1));`;
+  document.body.appendChild(ghost); pcEl.style.visibility='hidden';
+  document.body.classList.add('dragging');
+  _drag={from:idx, ghost, srcEl:pcEl, cell, moved:false};
+  moveGhost(ev.clientX, ev.clientY);
+  _drag.x0=ev.clientX; _drag.y0=ev.clientY;
+  moveGhost(ev.clientX, ev.clientY);
+  window.addEventListener('pointermove', onDragMove);
+  window.addEventListener('pointerup', onDragUp);
+  window.addEventListener('pointercancel', onDragCancel);
+}
+function moveGhost(x,y){ if(_drag) { _drag.ghost.style.left=(x-_drag.cell/2)+'px'; _drag.ghost.style.top=(y-_drag.cell/2)+'px'; } }
+function onDragMove(e){ if(!_drag) return;
+  // ignore finger jitter so a tap still counts as a tap
+  if(Math.hypot(e.clientX-_drag.x0, e.clientY-_drag.y0) > 6) _drag.moved=true;
+  moveGhost(e.clientX,e.clientY); }
+function endDrag(){
+  const d=_drag; if(!d) return null;
+  window.removeEventListener('pointermove', onDragMove);
+  window.removeEventListener('pointerup', onDragUp);
+  window.removeEventListener('pointercancel', onDragCancel);
+  d.ghost.remove(); if(d.srcEl) d.srcEl.style.visibility=''; document.body.classList.remove('dragging');
+  _drag=null; return d;
+}
+function onDragCancel(){ endDrag(); }
+function onDragUp(e){
+  const d=endDrag(); if(!d) return;
+  const {from, moved}=d;
+  const to=squareFromPoint(e.clientX, e.clientY);
+  if(moved){
+    if(to!=null && to!==from && T.legal && T.legal.has(to)) doMove(from, to);
+    else clearSel();               // dropped on illegal square -> snap back
+  } // if not moved, it's a click: selection stays for click-click
+}
+function doMove(from, to){
+  const movingPiece=T.state.sq[from], toRank=Math.floor(to/8);
+  const isPromo=(movingPiece==='P'&&toRank===7)||(movingPiece==='p'&&toRank===0);
+  T.legal=null;
+  if(isPromo){ askPromo(from,to); return; }
+  if(T.an){ T.an.stack.push(idxName(from)+idxName(to)); analyzeNow(); return; }
+  tryMove(idxName(from)+idxName(to));
+}
+
+function onSquare(idx){ beginInteract(idx, {preventDefault(){}}); }
+
+function askPromo(from,to){
+  const wrap=$('#promo'); wrap.innerHTML=''; wrap.classList.remove('hidden');
+  const mover=T.state.sq[from];
+  const white= mover ? mover===mover.toUpperCase() : T.solverColor==='w';
+  ['q','r','b','n'].forEach(pc=>{
+    const sym = white?pc.toUpperCase():pc;
+    const btn=el('button'); 
+    if(SETTINGS.style==='classic') btn.innerHTML=pieceSVG(sym);
+    else btn.textContent=GLYPH[sym];
+    btn.onclick=()=>{ wrap.classList.add('hidden');
+      if(T.an){ T.an.stack.push(idxName(from)+idxName(to)+pc); analyzeNow(); }
+      else tryMove(idxName(from)+idxName(to)+pc); };
+    wrap.appendChild(btn);
+  });
+}
+
+function tryMove(uci){
+  if(T.busy || T.solved) return;
+  const expected = T.line[T.mp];
+  T.sel=null; T.legal=null; T.hintSq=null;
+  if(uci === expected){
+    advance(uci);
+  } else if(isCheckmate(applyUci(T.state, uci))){
+    // a different move that also mates is just as good
+    T.state = applyUci(T.state, uci);
+    T.lastMove=[sqIdx(uci.slice(0,2)), sqIdx(uci.slice(2,4))];
+    flash('good'); drawBoard(); puzzleDone();
+  } else {
+    T.mistakes++;
+    feedback('Not the move — look again', 'bad');
+    drawBoard();
+    animateWrong(sqIdx(uci.slice(0,2)), sqIdx(uci.slice(2,4)));
+  }
+}
+function animateWrong(from, to){
+  const board=$('#board');
+  const sqFrom=[...board.children].find(c=>+c.dataset.idx===from);
+  const sqTo=[...board.children].find(c=>+c.dataset.idx===to);
+  const pc=sqFrom && sqFrom.querySelector('.pc');
+  if(!pc || !sqTo){ flash('bad'); return; }
+  const rf=sqFrom.getBoundingClientRect(), rt=sqTo.getBoundingClientRect();
+  const cell=rf.width;
+  const clone=pc.cloneNode(true);
+  clone.style.cssText=`position:fixed;left:${rf.left}px;top:${rf.top}px;width:${cell}px;height:${cell}px;`
+    +`display:flex;align-items:center;justify-content:center;z-index:60;pointer-events:none;`
+    +`font-size:${getComputedStyle(pc).fontSize};transform:translate(${rt.left-rf.left}px,${rt.top-rf.top}px);`
+    +`transition:transform .3s cubic-bezier(.4,1.3,.6,1);`;
+  document.body.appendChild(clone);
+  pc.style.visibility='hidden';
+  sqTo.classList.add('wrongtint');
+  requestAnimationFrame(()=>{ clone.style.transform='translate(0,0)'; });
+  const done=()=>{ clone.remove(); pc.style.visibility=''; sqTo.classList.remove('wrongtint'); };
+  clone.addEventListener('transitionend', done, {once:true});
+  setTimeout(done, 450);
+}
+
+function advance(uci){
+  // play the solver's correct move
+  T.state = applyUci(T.state, uci);
+  T.lastMove=[sqIdx(uci.slice(0,2)), sqIdx(uci.slice(2,4))];
+  T.mp++;
+  flash('good');
+  drawBoard();
+  if(T.mp >= T.end){ return puzzleDone(); }
+  // opponent reply (auto)
+  setTurn(false);
+  T.busy = true;
+  const opp=T.line[T.mp], gen=T.gen;
+  setTimeout(()=>{
+    if(!T || T.gen!==gen) return;
+    T.busy = false;
+    T.state = applyUci(T.state, opp);
+    T.lastMove=[sqIdx(opp.slice(0,2)), sqIdx(opp.slice(2,4))];
+    T.mp++;
+    drawBoard();
+    setTurn(true);
+    if(T.mp >= T.end) puzzleDone();
+    else feedback('Good — keep going', 'good');
+  }, 420);
+}
+
+function flash(kind){
+  const bw=$('.boardwrap');
+  bw.classList.remove('flash-good','flash-bad'); void bw.offsetWidth;
+  bw.classList.add(kind==='good'?'flash-good':'flash-bad');
+}
+function feedback(msg,kind){ const f=$('#feedback'); f.textContent=msg; f.className='feedback '+(kind||''); }
+
+function puzzleDone(){
+  if(T.solved) return;
+  T.solved = true; T.busy = false;
+  const clean = (T.mistakes===0 && !T.assisted);
+  const ms = performance.now()-T.puzzleStart;
+  T.perPuzzle[T.pos] = { id:T.puzzle.id, ms, mistakes:T.mistakes, assisted:T.assisted, clean };
+  feedback(clean?'Solved clean ✓':'Solved', clean?'good':'');
+  const last = T.pos >= S.puzzles.length-1;
+  // save with the *next* puzzle as the resume point, so closing the app now loses nothing
+  persistProgress(last ? T.pos : T.pos+1);
+  const gen=T.gen;
+  setTimeout(()=>{ if(!T || T.gen!==gen || !T.active) return; last ? finishCycle() : nextPuzzle(); }, 520);
+}
+function nextPuzzle(){ T.pos++; present(); }
+
+function skip(){
+  if(T.solved || T.busy) return;
+  T.perPuzzle[T.pos] = { id:T.puzzle.id, ms:performance.now()-T.puzzleStart, mistakes:T.mistakes, assisted:T.assisted, clean:false, skipped:true };
+  T.wrong++;
+  T.solved = true;
+  const last = T.pos>=S.puzzles.length-1;
+  persistProgress(last ? T.pos : T.pos+1);
+  if(last) finishCycle(); else nextPuzzle();
+}
+function showSolution(){
+  if(T.solved || T.busy) return;
+  if(T.an) exitAnalysis();
+  T.assisted=true; T.busy=true; T.hintSq=null;
+  const gen=T.gen;
+  (function play(){
+    if(!T || T.gen!==gen) return;
+    if(T.mp>=T.end){ puzzleDone(); return; }
+    const m=T.line[T.mp];
+    T.state=applyUci(T.state,m); T.lastMove=[sqIdx(m.slice(0,2)),sqIdx(m.slice(2,4))]; T.mp++;
+    drawBoard();
+    if(T.mp>=T.end){ puzzleDone(); return; }
+    setTimeout(play, 380);
+  })();
+}
+function hint(){
+  if(T.solved || T.busy) return;
+  T.hintSq = sqIdx(T.line[T.mp].slice(0,2));
+  T.mistakes = Math.max(T.mistakes, 1); // a hint costs your clean solve
+  drawBoard();
+  feedback('Move this piece', '');
+}
+
+// Save the cycle so it can be resumed. `resumePos` = the puzzle to reopen on.
+function persistProgress(resumePos){
+  if(!S || !T || !T.active) return;
+  const pos = resumePos!=null ? resumePos : (T.solved ? Math.min(T.pos+1, S.puzzles.length-1) : T.pos);
+  S.progress = { pos, perPuzzle:T.perPuzzle, wrong:T.wrong, committedMs:cycleElapsed() };
+  T.committedMs = S.progress.committedMs; T.resumeStart = performance.now();
+  S.lastPlayed = Date.now();
+  return DB.put(S);
+}
+
+function finishCycle(){
+  if(!T.active) return;
+  clearInterval(clockTimer);
+  T.active = false; T.gen++;
+  const ms = cycleElapsed();
+  const total = S.puzzles.length;
+  const solvedClean = T.perPuzzle.filter(p=>p && p.clean).length;
+  const cycle = { n:T.cycleIndex+1, ms, total, solvedClean,
+    endedAt:Date.now(), perPuzzle:T.perPuzzle };
+  S.cycles.push(cycle);
+  S.progress = null;
+  DB.put(S);
+  renderSummary(cycle);
+}
+
+function renderRail(){
+  const best = bestCycle(S);
+  $('#railBest').textContent = best ? fmtMs(best.ms) : '—';
+  $('#railBestAcc').textContent = best ? `${Math.round(best.acc*100)}% clean` : 'first run';
+  const lc = S.cycles[S.cycles.length-1];
+  $('#railLast').textContent = lc ? `Last cycle: ${fmtMs(lc.ms)} · ${Math.round((lc.solvedClean/lc.total)*100)}% clean` : 'No cycles yet — set your benchmark.';
+}
+
+// trainer buttons
+$('#hintBtn').onclick=hint;
+$('#solveBtn').onclick=showSolution;
+$('#skipBtn').onclick=skip;
+$('#flipBtn').onclick=()=>{ T.flip=!T.flip; drawBoard(); };
+function leaveTrainer(){
+  if(T && T.active){
+    if(T.an) exitAnalysis();
+    if(T.solved && T.pos>=S.puzzles.length-1){ finishCycle(); return false; }
+    persistProgress(); T.active=false; T.gen++;
+  }
+  clearInterval(clockTimer); return true;
+}
+$('#quitBtn').onclick=async ()=>{ if(!leaveTrainer()) return; toast('Progress saved'); await renderHome(); show('home'); };
+
+// ── Auto-save: iPhone can freeze or kill the tab at any time ────────────────
+// Pause the cycle clock while the app is in the background and save immediately.
+let _hiddenAt=null;
+function onHide(){
+  if(!T || !T.active || _hiddenAt!=null) return;
+  _hiddenAt=performance.now();
+  persistProgress();                     // commits elapsed time up to now
+}
+function onShow(){
+  if(_hiddenAt==null) return;
+  const away=performance.now()-_hiddenAt; _hiddenAt=null;
+  if(!T || !T.active) return;
+  T.resumeStart = performance.now();     // time away does not count
+  if(T.puzzleStart!=null) T.puzzleStart += away;
+}
+document.addEventListener('visibilitychange', ()=> document.hidden ? onHide() : onShow());
+window.addEventListener('pagehide', onHide);
+window.addEventListener('pageshow', onShow);
+
+// ── SUMMARY + growth rings ──────────────────────────────────────────────────
+function renderSummary(justFinished){
+  const cycles = S.cycles;
+  $('#sumEyebrow').textContent = `Cycle ${justFinished.n} complete`;
+  const acc = Math.round((justFinished.solvedClean/justFinished.total)*100);
+  $('#sumTitle').textContent = S.name;
+  $('#sumTime').textContent = fmtMs(justFinished.ms);
+  $('#sumAcc').textContent = acc+'% clean';
+
+  // growth rings: one per cycle, chronological outward; fastest in crest red
+  const svg=$('#ringsvg'); svg.innerHTML='';
+  const cx=160, cy=160;
+  const times=cycles.map(c=>c.ms);
+  const fastest=Math.min(...times);
+  const n=cycles.length;
+  const rMax=140, rMin=26, step=n>1?(rMax-rMin)/(n-1):0;
+  const ns='http://www.w3.org/2000/svg';
+  cycles.forEach((c,i)=>{
+    const r = n>1 ? rMin + step*i : 78;
+    const isBest = c.ms===fastest;
+    const ring=document.createElementNS(ns,'circle');
+    ring.setAttribute('cx',cx); ring.setAttribute('cy',cy); ring.setAttribute('r',r);
+    ring.setAttribute('fill','none');
+    ring.setAttribute('stroke', isBest ? '#cf3b2a' : '#c79a5b');
+    ring.setAttribute('stroke-width', isBest ? 3.4 : 1.6);
+    ring.setAttribute('opacity', isBest ? 1 : (0.45 + 0.5*(i+1)/n));
+    svg.appendChild(ring);
+  });
+  const core=document.createElementNS(ns,'circle');
+  core.setAttribute('cx',cx);core.setAttribute('cy',cy);core.setAttribute('r',10);
+  core.setAttribute('fill','#cf3b2a'); svg.appendChild(core);
+  const label=document.createElementNS(ns,'text');
+  label.setAttribute('x',cx);label.setAttribute('y',cy+5);label.setAttribute('text-anchor','middle');
+  label.setAttribute('fill','#15110d');label.setAttribute('font-size','11');label.setAttribute('font-weight','700');
+  label.textContent=n; svg.appendChild(label);
+  $('#ringLegend').innerHTML = `<span>each ring = one cycle</span><span><b style="color:#cf3b2a">●</b> fastest pass</span><span>center number = cycles done</span>`;
+
+  // precise bars
+  const bars=$('#cyclebars'); bars.innerHTML='';
+  const maxT=Math.max(...times);
+  cycles.forEach(c=>{
+    const b=el('div','b'+(c.ms===fastest?' best':''));
+    b.style.height = Math.max(6, (c.ms/maxT)*100)+'%';
+    b.appendChild(el('span',null,fmtMs(c.ms)));
+    b.appendChild(el('small',null,'C'+c.n));
+    bars.appendChild(b);
+  });
+
+  // table
+  const tbl=$('#cycleTbl');
+  const first=cycles[0].ms;
+  tbl.innerHTML='<tr><th>Cycle</th><th>Time</th><th>Clean</th><th>vs cycle 1</th></tr>'+
+    cycles.map(c=>{
+      const a=Math.round((c.solvedClean/c.total)*100);
+      const delta = c===cycles[0] ? '—' : (Math.round((1-c.ms/first)*100)+'% faster');
+      return `<tr><td>${c.n}</td><td class="mono">${fmtMs(c.ms)}</td><td class="mono">${a}%</td><td class="mono">${delta}</td></tr>`;
+    }).join('');
+
+  show('summary');
+}
+
+$('#nextCycle').onclick = ()=> startCycle(null);
+$('#backHome').onclick = ()=>{ renderHome(); show('home'); };
+$('#reviewBtn').onclick = ()=>{
+  // simplest review: re-run the set as a fresh cycle but jump to puzzles that weren't clean
+  toast('Starting a fresh cycle — focus on the ones that bit you');
+  startCycle(null);
+};
+
+// ── boot ────────────────────────────────────────────────────────────────────
+$('#homeBtn').onclick = async ()=>{ if(!$('#view-train').classList.contains('hidden') && !leaveTrainer()) return; await renderHome(); show('home'); };
+wireDrop();
+renderHome();
+show('home');
+
+// keyboard: F flips, S skips during training
+document.addEventListener('keydown', e=>{
+  if($('#view-train').classList.contains('hidden')) return;
+  if(e.key==='f'||e.key==='F'){ T.flip=!T.flip; drawBoard(); }
+});
+
+// ── Import a bookscan JSON (one set per chapter) ─────────────────────────────
+$('#importScan').onclick = ()=> $('#scanFile').click();
+$('#scanFile').onchange = async ()=>{
+  const f = $('#scanFile').files[0]; if(!f) return;
+  try{ const doc = JSON.parse(await f.text()); await importScannedDoc(doc); }
+  catch(e){ console.error(e); toast('Could not read that JSON'); }
+  $('#scanFile').value='';
+};
+async function importScannedDoc(doc){
+  if(!doc || !Array.isArray(doc.chapters)){ toast('Not a bookscan file'); return; }
+  const flagged = doc.chapters.reduce((n,ch)=> n + (ch.puzzles||[]).filter(p=>p.needsReview && p.moves && p.moves.length).length, 0);
+  const total = doc.chapters.reduce((n,ch)=> n + (ch.puzzles||[]).length, 0);
+  const keepFlagged = !flagged || confirm(`${flagged} of ${total} puzzles are flagged "needs review" (the engine line may not match the book).\n\nOK = include them\nCancel = leave them out`);
+  let made=0, skipped=0;
+  for(const ch of doc.chapters){
+    const puzzles = (ch.puzzles||[])
+      .filter(p=> p.fen && Array.isArray(p.moves) && p.moves.length && (keepFlagged || !p.needsReview))
+      .map(p=>({ id:p.id, fen:p.fen, moves:p.moves.slice(),
+                 themes:(p.flags||[]).join(' '),
+                 needsReview:!!p.needsReview, engineConfidence:p.engineConfidence }));
+    skipped += (ch.puzzles||[]).length - puzzles.length;
+    if(!puzzles.length) continue;
+    const set = { id:uid(), name:`${doc.book||'Book'} — ${ch.name}`, createdAt:Date.now()+made,
+      source:'bookscan', solverFirst:true, puzzles, cycles:[], progress:null };
+    await DB.put(set); made++;
+  }
+  toast(`Imported ${made} chapter set${made===1?'':'s'}` + (skipped?` · ${skipped} left out`:''));
+  renderHome(); show('home');
+}
+
+// ── Appearance settings ─────────────────────────────────────────────────────
+const SETTINGS = { board:'wood', style:'classic', size:1, depth:0 };
+(function loadSettings(){ try{ Object.assign(SETTINGS, JSON.parse(localStorage.getItem('wp_look')||'{}')); }catch(e){} })();
+function saveSettings(){ try{ localStorage.setItem('wp_look', JSON.stringify(SETTINGS)); }catch(e){} }
+function applySettings(){
+  const t = BOARD_THEMES[SETTINGS.board] || BOARD_THEMES.wood;
+  document.documentElement.style.setProperty('--light', t.light);
+  document.documentElement.style.setProperty('--dark', t.dark);
+  const b = document.getElementById('board');
+  if(b){ b.classList.remove('style-solid','style-outline','style-letters'); b.classList.add('style-'+SETTINGS.style);
+         b.style.setProperty('--pieceScale', SETTINGS.size); }
+  const bo=$('#optBoard'), st=$('#optStyle'), sz=$('#optSize');
+  if(bo) bo.value=SETTINGS.board; if(st) st.value=SETTINGS.style; if(sz) sz.value=SETTINGS.size;
+  const dp=$('#optDepth'); if(dp) dp.value=String(SETTINGS.depth||0);
+}
+$('#optBoard').onchange = e=>{ SETTINGS.board=e.target.value; saveSettings(); applySettings(); };
+$('#optStyle').onchange = e=>{ SETTINGS.style=e.target.value; saveSettings(); applySettings(); if(T) drawBoard(); };
+$('#optSize').oninput   = e=>{ SETTINGS.size=+e.target.value; saveSettings(); applySettings(); };
+$('#optDepth').onchange = e=>{ SETTINGS.depth=+e.target.value; saveSettings();
+  // apply to the current puzzle straight away
+  if(T && T.active && !T.solved){ const d=SETTINGS.depth, first=S.solverFirst?0:1;
+    T.end = d>0 ? Math.min(T.line.length, first + 2*d - 1) : T.line.length;
+    if(T.mp>=T.end && !T.busy) puzzleDone(); }
+  toast(SETTINGS.depth ? `Puzzles end after your first ${SETTINGS.depth} move${SETTINGS.depth>1?'s':''}` : 'Full solution line required'); };
+applySettings();
+
+// ── Live engine analysis (Stockfish worker via CDN; material fallback) ──────
+const _VAL={P:1,N:3,B:3,R:5,Q:9,K:0};
+function materialCp(st){ let s=0; for(const p of st.sq){ if(!p) continue; const v=_VAL[p.toUpperCase()]*100; s+=(p===p.toUpperCase()?v:-v);} return s; }
+function evalPct(cp){ return Math.max(2,Math.min(98,100/(1+Math.pow(10,-cp/400)))); }
+function stateToFen(st){
+  let rows=[];
+  for(let r=7;r>=0;r--){ let row='',e=0; for(let f=0;f<8;f++){ const p=st.sq[r*8+f];
+    if(p){ if(e){row+=e;e=0;} row+=p; } else e++; } if(e)row+=e; rows.push(row); }
+  return rows.join('/')+' '+st.turn+' - - 0 1';
+}
+// engine worker
+let ENG=null, engReady=false, engTried=false, engCbs=[];
+function flushEng(ok){ engReady=!!ok; const cbs=engCbs; engCbs=[]; cbs.forEach(c=>c(ok)); }
+function ensureEngine(cb){
+  if(engReady) return cb(true);
+  engCbs.push(cb); if(engTried) return; engTried=true;
+  if(typeof Worker==='undefined'){ return flushEng(false); }
+  try{
+    const src='https://cdnjs.cloudflare.com/ajax/libs/stockfish.js/10.0.2/stockfish.js';
+    const blob=new Blob(["importScripts('"+src+"')"],{type:'application/javascript'});
+    ENG=new Worker(URL.createObjectURL(blob));
+    ENG.onmessage=onEng; ENG.onerror=()=>flushEng(false);
+    ENG.postMessage('uci');
+    setTimeout(()=>{ if(!engReady) flushEng(false); }, 8000);
+  }catch(e){ flushEng(false); }
+}
+function onEng(e){
+  const line=typeof e.data==='string'?e.data:((e.data&&e.data.data)||'');
+  if(line==='uciok'){ ENG.postMessage('isready'); return; }
+  if(line==='readyok'){ if(!engReady) flushEng(true); return; }
+  if(line.indexOf('info')===0 && T && T.an && T.an.live) parseInfo(line);
+}
+function parseInfo(line){
+  const t=line.split(/\s+/); let depth=0, cp=null, mate=null, pv=[];
+  for(let i=0;i<t.length;i++){
+    if(t[i]==='depth') depth=+t[i+1];
+    else if(t[i]==='score'){ if(t[i+1]==='cp') cp=+t[i+2]; else if(t[i+1]==='mate') mate=+t[i+2]; }
+    else if(t[i]==='pv'){ pv=t.slice(i+1); break; }
+  }
+  const whiteMul = (T.an.turn==='w')?1:-1;
+  let wcp = cp!=null ? cp*whiteMul : (mate!=null? (mate>0? 100000:-100000)*whiteMul : 0);
+  $('#evalFill').style.width=evalPct(wcp).toFixed(1)+'%';
+  let txt;
+  if(mate!=null){ const wm=mate*whiteMul; txt=(wm<0?'-':'')+'M'+Math.abs(mate); }
+  else if(cp!=null){ const p=wcp/100; txt=(p>=0?'+':'')+p.toFixed(2); }
+  else txt='';
+  $('#evalText').textContent = txt+(depth?'  d'+depth:'');
+  T.an.pv=pv; renderPV(pv);
+}
+function currentAnState(){ let st=parseFEN(T.an.baseFen); for(const m of T.an.stack) st=applyUci(st,m); return st; }
+function currentAnFen(){ return stateToFen(currentAnState()); }
+function analyzeNow(){
+  const st=currentAnState(); T.state=st; T.an.turn=st.turn;
+  T.lastMove = T.an.stack.length? [sqIdx(T.an.stack[T.an.stack.length-1].slice(0,2)),sqIdx(T.an.stack[T.an.stack.length-1].slice(2,4))]:null;
+  T.sel=null; T.legal=null; drawBoard();
+  if(engReady && ENG){ const fen=stateToFen(st); ENG.postMessage('stop'); ENG.postMessage('position fen '+fen); ENG.postMessage('go depth 22'); }
+  else { const wcp=materialCp(st); $('#evalFill').style.width=evalPct(wcp).toFixed(1)+'%';
+    const p=wcp/100; $('#evalText').textContent=(p>=0?'+':'')+p.toFixed(1)+'  (material)';
+    renderPV(T.puzzle.moves||[]); }
+}
+function renderPV(pv){
+  const box=$('#lineMoves'); box.innerHTML='';
+  pv.slice(0,14).forEach((m,i)=>{ const b=el('button',null, m.slice(0,2)+'-'+m.slice(2,4));
+    b.onclick=()=>{ for(let k=0;k<=i;k++) T.an.stack.push(pv[k]); analyzeNow(); }; box.appendChild(b); });
+}
+function toggleAnalysis(){ if(T && T.an) exitAnalysis(); else enterAnalysis(); }
+function enterAnalysis(){
+  if(!T || !T.puzzle) return;
+  if(!T.solved) T.assisted=true;
+  T._snap={ state:T.state, mp:T.mp, lastMove:T.lastMove, sel:T.sel, legal:T.legal };
+  T.an={ baseFen:stateToFen(T.state), stack:[], turn:T.state.turn, live:true, pv:[] };
+  $('#analysisPanel').classList.remove('hidden'); $('#analyzeBtn').textContent='Close analysis';
+  $('#anStatus').textContent='Loading engine…';
+  ensureEngine(ok=>{ $('#anStatus').textContent = ok?'Stockfish · move pieces to explore':'Offline — material estimate'; if(T.an) analyzeNow(); });
+  analyzeNow();
+}
+function exitAnalysis(){
+  if(ENG) ENG.postMessage('stop');
+  const s=T._snap; if(s){ T.state=s.state; T.mp=s.mp; T.lastMove=s.lastMove; T.sel=s.sel; T.legal=s.legal; }
+  T.an=null; T._snap=null;
+  $('#analysisPanel').classList.add('hidden'); $('#analyzeBtn').textContent='Analysis'; drawBoard();
+}
+$('#analyzeBtn').onclick=toggleAnalysis;
+$('#anPrev').onclick=()=>{ if(T.an && T.an.stack.length){ T.an.stack.pop(); analyzeNow(); } };
+// ── Backup / restore (move progress between browsers or devices) ────────────
+$('#backupBtn').onclick = async ()=>{
+  if(T && T.active) await persistProgress();
+  const sets = await DB.all();
+  const doc = { app:'woodpecker', version:1, exportedAt:new Date().toISOString(), settings:SETTINGS, sets };
+  const blob = new Blob([JSON.stringify(doc)], {type:'application/json'});
+  const name = `woodpecker-backup-${new Date().toISOString().slice(0,10)}.json`;
+  const file = (typeof File!=='undefined') ? new File([blob], name, {type:'application/json'}) : null;
+  // iPhone: the share sheet lets you "Save to Files" or AirDrop it
+  if(file && navigator.canShare && navigator.canShare({files:[file]})){
+    try{ await navigator.share({files:[file], title:'Woodpecker backup'}); return; }
+    catch(e){ if(e && e.name==='AbortError') return; }
+  }
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=name;
+  document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(a.href), 4000);
+  toast(`Backed up ${sets.length} set${sets.length===1?'':'s'}`);
+};
+$('#restoreBtn').onclick = ()=> $('#restoreFile').click();
+$('#restoreFile').onchange = async ()=>{
+  const f=$('#restoreFile').files[0]; $('#restoreFile').value=''; if(!f) return;
+  try{
+    const doc=JSON.parse(await f.text());
+    if(!doc || doc.app!=='woodpecker' || !Array.isArray(doc.sets)){
+      if(doc && Array.isArray(doc.chapters)){ await importScannedDoc(doc); return; }
+      toast('That is not a Woodpecker backup'); return; }
+    const existing = new Set(((await DB.all())||[]).map(s=>s.id));
+    const clash = doc.sets.filter(s=>existing.has(s.id)).length;
+    if(clash && !confirm(`Replace ${clash} set${clash===1?'':'s'} on this device with the backup's version?`)) return;
+    for(const s of doc.sets){ if(s && s.id && Array.isArray(s.puzzles)) await DB.put(s); }
+    if(doc.settings){ Object.assign(SETTINGS, doc.settings); saveSettings(); applySettings(); }
+    toast(`Restored ${doc.sets.length} set${doc.sets.length===1?'':'s'}`); renderHome(); show('home');
+  }catch(e){ console.error(e); toast('Could not read that backup'); }
+};
+
+// ── Keep data safe & work offline ───────────────────────────────────────────
+(async function storageSetup(){
+  const note=$('#storageNote');
+  const standalone = matchMedia('(display-mode: standalone)').matches || navigator.standalone;
+  try{
+    if(navigator.storage && navigator.storage.persist){
+      const ok = await navigator.storage.persisted() || await navigator.storage.persist();
+      if(note) note.textContent = ok || standalone
+        ? 'Progress saves automatically on this device.'
+        : 'Progress saves automatically. Tip: add to Home Screen so iOS never clears it.';
+    }
+  }catch(e){}
+  if('serviceWorker' in navigator && window.isSecureContext && location.protocol!=='file:'){
+    navigator.serviceWorker.register('sw.js').catch(()=>{});
+  }
+})();
+
+$('#anNext').onclick=()=>{ if(T.an && T.an.pv && T.an.pv.length){ T.an.stack.push(T.an.pv[0]); analyzeNow(); } };
+
+</script>
+</body>
+</html>
