@@ -20,7 +20,7 @@
   --grain:#c79a5b; --crest:#cf3b2a; --crest-dim:#8f2b20;
   --moss:#8aa257; --moss-dim:#4f5e34;
   --shadow:0 18px 40px -22px #000;
-  --light:#caa46e; --dark:#5c4630; /* board squares (woodgrain) */
+  --light:#eeeed2; --dark:#769656; /* board squares (green) */
 }
 *{box-sizing:border-box}
 html,body{margin:0;background:var(--bark);color:var(--sap);
@@ -86,30 +86,23 @@ a{color:var(--grain)}
   border-radius:10px;overflow:hidden;border:1px solid var(--ring2);box-shadow:var(--shadow)}
 .board{position:absolute;inset:0;display:grid;grid-template-columns:repeat(8,1fr);grid-template-rows:repeat(8,1fr)}
 .sqr{position:relative;display:flex;align-items:center;justify-content:center;user-select:none;
-  font-size:calc(min(11.5vw,64px)*var(--pieceScale,1));line-height:1}
+  line-height:1}
 .sqr.light{background:var(--light)}.sqr.dark{background:var(--dark)}
-.board{--pieceScale:1}
 .pc{filter:drop-shadow(0 1px 1px rgba(0,0,0,.35));pointer-events:none}
-.pc.w{color:#f6f1e7}.pc.b{color:#1b140e}
-.style-solid .pc.w{-webkit-text-stroke:1.4px #17110b;paint-order:stroke fill}
-.style-letters .pc{font-family:Iowan Old Style,Palatino,Georgia,serif;font-weight:700}
-.style-letters .pc.w{-webkit-text-stroke:.8px #17110b}
 .setrow{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:9px}
 .setrow label{font-size:13px;color:var(--muted)}
 .setrow select{background:#100c08;border:1px solid var(--ring2);color:var(--sap);border-radius:8px;padding:6px 8px;font:inherit;font-size:13px}
-.setrow input[type=range]{flex:1;max-width:130px;accent-color:var(--crest)}
+
 .resumeRow{display:flex;align-items:center;justify-content:space-between;gap:14px;margin-top:8px;flex-wrap:wrap}
 .resumeRow .rt{font-family:Iowan Old Style,Palatino,Georgia,serif;font-size:19px}
 .resumeBtns{display:flex;gap:8px}
 .cardBtns{display:flex;gap:8px;margin-top:12px}
 .cardBtns .ghost{padding:6px 12px;font-size:13px}
-.pcsvg{width:88%;height:88%;display:block;overflow:visible}
-.pcsvg *{stroke-linejoin:round;stroke-linecap:round}
-.pcsvg.pcw *{fill:#f3efe6;stroke:#1b1b1b;stroke-width:1.5}
-.pcsvg.pcw path[stroke-width]{fill:none}
-.pcsvg.pcb *{fill:#2a2521;stroke:#000;stroke-width:1.5}
-.pcsvg.pcb path[stroke-width]{fill:none;stroke:#f3efe6}
-.pc.ghost .pcsvg{width:100%;height:100%}
+.cbsvg{display:block;width:92%;height:92%;overflow:visible}
+.pc{display:flex;align-items:center;justify-content:center;width:100%;height:100%}
+.pc.ghost .cbsvg{width:100%;height:100%}
+.promo button{display:flex;align-items:center;justify-content:center;padding:4px}
+.promo .cbsvg{width:100%;height:100%}
 .dot2::after{content:"";position:absolute;width:30%;height:30%;border-radius:50%;background:rgba(20,15,10,.32)}
 .sqr.ring{box-shadow:inset 0 0 0 5px rgba(20,15,10,.28)}
 .cardDel{position:absolute;top:8px;right:10px;width:26px;height:26px;border:1px solid var(--ring2);
@@ -326,20 +319,7 @@ html{-webkit-tap-highlight-color:transparent}
           </div>
         </div>
         <div class="panel" style="margin-top:14px;padding:14px">
-          <div class="eyebrow">Appearance</div>
-          <div class="setrow"><label>Board</label>
-            <select id="optBoard">
-              <option value="wood">Wood</option><option value="green">Green</option>
-              <option value="blue">Blue</option><option value="gray">Gray</option>
-              <option value="slate">Slate</option><option value="coffee">Coffee</option>
-            </select></div>
-          <div class="setrow"><label>Pieces</label>
-            <select id="optStyle">
-              <option value="classic">Classic</option><option value="solid">Solid</option><option value="outline">Outline</option>
-              <option value="letters">Letters</option>
-            </select></div>
-          <div class="setrow"><label>Size</label>
-            <input id="optSize" type="range" min="0.7" max="1.35" step="0.05" value="1"></div>
+          <div class="eyebrow">Training</div>
           <div class="setrow"><label title="Long engine lines can be cut short: the puzzle counts as solved after this many of your moves">Solve depth</label>
             <select id="optDepth">
               <option value="0">Full line</option><option value="3">First 3 moves</option>
@@ -423,17 +403,6 @@ function applyUci(state, uci){
   const ep = (isPawn && Math.abs(to-from) === 16) ? (from+to)/2 : null;
   return { sq, turn: state.turn==='w'?'b':'w', ep };
 }
-// Glyphs
-const GLYPH = {K:'\u2654',Q:'\u2655',R:'\u2656',B:'\u2657',N:'\u2658',P:'\u2659',
-               k:'\u265A',q:'\u265B',r:'\u265C',b:'\u265D',n:'\u265E',p:'\u265F'};
-const GLYPH_SOLID = {K:'\u265A',Q:'\u265B',R:'\u265C',B:'\u265D',N:'\u265E',P:'\u265F',
-                     k:'\u265A',q:'\u265B',r:'\u265C',b:'\u265D',n:'\u265E',p:'\u265F'};
-const GLYPH_LETTER = {K:'K',Q:'Q',R:'R',B:'B',N:'N',P:'P',k:'K',q:'Q',r:'R',b:'B',n:'N',p:'P'};
-const BOARD_THEMES = {
-  wood:{light:'#caa46e',dark:'#5c4630'}, green:{light:'#eeeed2',dark:'#769656'},
-  blue:{light:'#dee3e6',dark:'#8ca2ad'}, gray:{light:'#e0e0e0',dark:'#8f8f8f'},
-  slate:{light:'#c7ccd1',dark:'#3f4a54'}, coffee:{light:'#e9d8b8',dark:'#7a5230'}};
-
 // ── Legal move generation (for drag targets + dots) ─────────────────────────
 function _wc(ch){ return ch===ch.toUpperCase(); }
 const _DIRB=[[1,1],[1,-1],[-1,1],[-1,-1]], _DIRR=[[1,0],[-1,0],[0,1],[0,-1]];
@@ -500,21 +469,9 @@ function isCheckmate(state){
   return true;
 }
 
-// ── Original vector piece set ("classic" style; drawn here, not copied) ──────
-const _P = {
-  p:'<circle cx="22.5" cy="17" r="6"/><path d="M15 34c0-6 5-8 7.5-8s7.5 2 7.5 8z"/><rect x="13" y="33" width="19" height="4.5" rx="2"/>',
-  r:'<path d="M13 13h4v3h3v-3h5v3h3v-3h4v7l-3 3v9l3 3v3H13v-3l3-3v-9l-3-3z"/><rect x="12" y="37" width="21" height="4.5" rx="1.5"/>',
-  n:'<path d="M22 11c6 0 12 4 12 15v11H15c0-6 2-8 5-11 1.5-1.5-4 .5-6-2-1.5-2 1-5 2-6 2-2 1-4 0-5 3-2 6-2 8-2 .5-2 3-2 3-2 .3-1-.5-2-1-2 1-1 2-1 3-.5z"/><rect x="13" y="37" width="21" height="4.5" rx="1.5"/>',
-  b:'<circle cx="22.5" cy="8.3" r="2.3"/><path d="M22.5 10.5c7 1.5 9.5 8 6.8 13.2-1.7 3.2-4.4 4.9-6.8 5.9-2.4-1-5.1-2.7-6.8-5.9-2.7-5.2-.2-11.7 6.8-13.2z"/><path d="M22.5 13.2l1.9 5.6" stroke-width="1.3"/><rect x="15" y="29" width="15" height="3.3" rx="1.6"/><path d="M14 37.4c2-3.6 15-3.6 17 0z"/><rect x="12.5" y="37.2" width="20" height="4" rx="1.6"/>',
-  q:'<circle cx="9" cy="14" r="2.4"/><circle cx="16" cy="11" r="2.4"/><circle cx="22.5" cy="10" r="2.6"/><circle cx="29" cy="11" r="2.4"/><circle cx="36" cy="14" r="2.4"/><path d="M9 15l3 18h21l3-18-6 9-3-11-4.5 12L18 13l-3 11z"/><rect x="12" y="33" width="21" height="4" rx="1.5"/><rect x="11" y="37" width="23" height="4.5" rx="1.6"/>',
-  k:'<path d="M22.5 6v6M19.5 8.5h6" stroke-width="2"/><path d="M22.5 13c4 0 7 3 7 7 0 3-2 5-3.5 6l-3.5 2-3.5-2c-1.5-1-3.5-3-3.5-6 0-4 3-7 7-7z"/><path d="M12 26c5-4 16-4 21 0l-2 10H14z"/><rect x="11" y="37" width="23" height="4.5" rx="1.6"/>'
-};
-const PIECES = {};
-for(const k of ['p','r','n','b','q','k']){ PIECES[k.toUpperCase()]=_P[k]; PIECES[k]=_P[k]; }
-function pieceSVG(piece){
-  const white = piece===piece.toUpperCase();
-  return `<svg class="pcsvg ${white?'pcw':'pcb'}" viewBox="0 0 45 45" aria-hidden="true">${PIECES[piece]}</svg>`;
-}
+// "cburnett" piece set (Colin M.L. Burnett, GPLv2+/BSD/GFDL; the set Lichess uses), via python-chess
+const CBURNETT = {"P": "<g id=\"white-pawn\" class=\"white pawn\"><path d=\"M22.5 9c-2.21 0-4 1.79-4 4 0 .89.29 1.71.78 2.38C17.33 16.5 16 18.59 16 21c0 2.03.94 3.84 2.41 5.03-3 1.06-7.41 5.55-7.41 13.47h23c0-7.92-4.41-12.41-7.41-13.47 1.47-1.19 2.41-3 2.41-5.03 0-2.41-1.33-4.5-3.28-5.62.49-.67.78-1.49.78-2.38 0-2.21-1.79-4-4-4z\" fill=\"#fff\" stroke=\"#000\" stroke-width=\"1.5\" stroke-linecap=\"round\"/></g>", "N": "<g id=\"white-knight\" class=\"white knight\" fill=\"none\" fill-rule=\"evenodd\" stroke=\"#000\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M 22,10 C 32.5,11 38.5,18 38,39 L 15,39 C 15,30 25,32.5 23,18\" style=\"fill:#ffffff; stroke:#000000;\"/><path d=\"M 24,18 C 24.38,20.91 18.45,25.37 16,27 C 13,29 13.18,31.34 11,31 C 9.958,30.06 12.41,27.96 11,28 C 10,28 11.19,29.23 10,30 C 9,30 5.997,31 6,26 C 6,24 12,14 12,14 C 12,14 13.89,12.1 14,10.5 C 13.27,9.506 13.5,8.5 13.5,7.5 C 14.5,6.5 16.5,10 16.5,10 L 18.5,10 C 18.5,10 19.28,8.008 21,7 C 22,7 22,10 22,10\" style=\"fill:#ffffff; stroke:#000000;\"/><path d=\"M 9.5 25.5 A 0.5 0.5 0 1 1 8.5,25.5 A 0.5 0.5 0 1 1 9.5 25.5 z\" style=\"fill:#000000; stroke:#000000;\"/><path d=\"M 15 15.5 A 0.5 1.5 0 1 1 14,15.5 A 0.5 1.5 0 1 1 15 15.5 z\" transform=\"matrix(0.866,0.5,-0.5,0.866,9.693,-5.173)\" style=\"fill:#000000; stroke:#000000;\"/></g>", "B": "<g id=\"white-bishop\" class=\"white bishop\" fill=\"none\" fill-rule=\"evenodd\" stroke=\"#000\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><g fill=\"#fff\" stroke-linecap=\"butt\"><path d=\"M9 36c3.39-.97 10.11.43 13.5-2 3.39 2.43 10.11 1.03 13.5 2 0 0 1.65.54 3 2-.68.97-1.65.99-3 .5-3.39-.97-10.11.46-13.5-1-3.39 1.46-10.11.03-13.5 1-1.354.49-2.323.47-3-.5 1.354-1.94 3-2 3-2zM15 32c2.5 2.5 12.5 2.5 15 0 .5-1.5 0-2 0-2 0-2.5-2.5-4-2.5-4 5.5-1.5 6-11.5-5-15.5-11 4-10.5 14-5 15.5 0 0-2.5 1.5-2.5 4 0 0-.5.5 0 2zM25 8a2.5 2.5 0 1 1-5 0 2.5 2.5 0 1 1 5 0z\"/></g><path d=\"M17.5 26h10M15 30h15m-7.5-14.5v5M20 18h5\" stroke-linejoin=\"miter\"/></g>", "R": "<g id=\"white-rook\" class=\"white rook\" fill=\"#fff\" fill-rule=\"evenodd\" stroke=\"#000\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M9 39h27v-3H9v3zM12 36v-4h21v4H12zM11 14V9h4v2h5V9h5v2h5V9h4v5\" stroke-linecap=\"butt\"/><path d=\"M34 14l-3 3H14l-3-3\"/><path d=\"M31 17v12.5H14V17\" stroke-linecap=\"butt\" stroke-linejoin=\"miter\"/><path d=\"M31 29.5l1.5 2.5h-20l1.5-2.5\"/><path d=\"M11 14h23\" fill=\"none\" stroke-linejoin=\"miter\"/></g>", "Q": "<g id=\"white-queen\" class=\"white queen\" fill=\"#fff\" fill-rule=\"evenodd\" stroke=\"#000\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M8 12a2 2 0 1 1-4 0 2 2 0 1 1 4 0zM24.5 7.5a2 2 0 1 1-4 0 2 2 0 1 1 4 0zM41 12a2 2 0 1 1-4 0 2 2 0 1 1 4 0zM16 8.5a2 2 0 1 1-4 0 2 2 0 1 1 4 0zM33 9a2 2 0 1 1-4 0 2 2 0 1 1 4 0z\"/><path d=\"M9 26c8.5-1.5 21-1.5 27 0l2-12-7 11V11l-5.5 13.5-3-15-3 15-5.5-14V25L7 14l2 12zM9 26c0 2 1.5 2 2.5 4 1 1.5 1 1 .5 3.5-1.5 1-1.5 2.5-1.5 2.5-1.5 1.5.5 2.5.5 2.5 6.5 1 16.5 1 23 0 0 0 1.5-1 0-2.5 0 0 .5-1.5-1-2.5-.5-2.5-.5-2 .5-3.5 1-2 2.5-2 2.5-4-8.5-1.5-18.5-1.5-27 0z\" stroke-linecap=\"butt\"/><path d=\"M11.5 30c3.5-1 18.5-1 22 0M12 33.5c6-1 15-1 21 0\" fill=\"none\"/></g>", "K": "<g id=\"white-king\" class=\"white king\" fill=\"none\" fill-rule=\"evenodd\" stroke=\"#000\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M22.5 11.63V6M20 8h5\" stroke-linejoin=\"miter\"/><path d=\"M22.5 25s4.5-7.5 3-10.5c0 0-1-2.5-3-2.5s-3 2.5-3 2.5c-1.5 3 3 10.5 3 10.5\" fill=\"#fff\" stroke-linecap=\"butt\" stroke-linejoin=\"miter\"/><path d=\"M11.5 37c5.5 3.5 15.5 3.5 21 0v-7s9-4.5 6-10.5c-4-6.5-13.5-3.5-16 4V27v-3.5c-3.5-7.5-13-10.5-16-4-3 6 5 10 5 10V37z\" fill=\"#fff\"/><path d=\"M11.5 30c5.5-3 15.5-3 21 0m-21 3.5c5.5-3 15.5-3 21 0m-21 3.5c5.5-3 15.5-3 21 0\"/></g>", "p": "<g id=\"black-pawn\" class=\"black pawn\"><path d=\"M22.5 9c-2.21 0-4 1.79-4 4 0 .89.29 1.71.78 2.38C17.33 16.5 16 18.59 16 21c0 2.03.94 3.84 2.41 5.03-3 1.06-7.41 5.55-7.41 13.47h23c0-7.92-4.41-12.41-7.41-13.47 1.47-1.19 2.41-3 2.41-5.03 0-2.41-1.33-4.5-3.28-5.62.49-.67.78-1.49.78-2.38 0-2.21-1.79-4-4-4z\" fill=\"#000\" stroke=\"#000\" stroke-width=\"1.5\" stroke-linecap=\"round\"/></g>", "n": "<g id=\"black-knight\" class=\"black knight\" fill=\"none\" fill-rule=\"evenodd\" stroke=\"#000\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M 22,10 C 32.5,11 38.5,18 38,39 L 15,39 C 15,30 25,32.5 23,18\" style=\"fill:#000000; stroke:#000000;\"/><path d=\"M 24,18 C 24.38,20.91 18.45,25.37 16,27 C 13,29 13.18,31.34 11,31 C 9.958,30.06 12.41,27.96 11,28 C 10,28 11.19,29.23 10,30 C 9,30 5.997,31 6,26 C 6,24 12,14 12,14 C 12,14 13.89,12.1 14,10.5 C 13.27,9.506 13.5,8.5 13.5,7.5 C 14.5,6.5 16.5,10 16.5,10 L 18.5,10 C 18.5,10 19.28,8.008 21,7 C 22,7 22,10 22,10\" style=\"fill:#000000; stroke:#000000;\"/><path d=\"M 9.5 25.5 A 0.5 0.5 0 1 1 8.5,25.5 A 0.5 0.5 0 1 1 9.5 25.5 z\" style=\"fill:#ececec; stroke:#ececec;\"/><path d=\"M 15 15.5 A 0.5 1.5 0 1 1 14,15.5 A 0.5 1.5 0 1 1 15 15.5 z\" transform=\"matrix(0.866,0.5,-0.5,0.866,9.693,-5.173)\" style=\"fill:#ececec; stroke:#ececec;\"/><path d=\"M 24.55,10.4 L 24.1,11.85 L 24.6,12 C 27.75,13 30.25,14.49 32.5,18.75 C 34.75,23.01 35.75,29.06 35.25,39 L 35.2,39.5 L 37.45,39.5 L 37.5,39 C 38,28.94 36.62,22.15 34.25,17.66 C 31.88,13.17 28.46,11.02 25.06,10.5 L 24.55,10.4 z \" style=\"fill:#ececec; stroke:none;\"/></g>", "b": "<g id=\"black-bishop\" class=\"black bishop\" fill=\"none\" fill-rule=\"evenodd\" stroke=\"#000\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M9 36c3.39-.97 10.11.43 13.5-2 3.39 2.43 10.11 1.03 13.5 2 0 0 1.65.54 3 2-.68.97-1.65.99-3 .5-3.39-.97-10.11.46-13.5-1-3.39 1.46-10.11.03-13.5 1-1.354.49-2.323.47-3-.5 1.354-1.94 3-2 3-2zm6-4c2.5 2.5 12.5 2.5 15 0 .5-1.5 0-2 0-2 0-2.5-2.5-4-2.5-4 5.5-1.5 6-11.5-5-15.5-11 4-10.5 14-5 15.5 0 0-2.5 1.5-2.5 4 0 0-.5.5 0 2zM25 8a2.5 2.5 0 1 1-5 0 2.5 2.5 0 1 1 5 0z\" fill=\"#000\" stroke-linecap=\"butt\"/><path d=\"M17.5 26h10M15 30h15m-7.5-14.5v5M20 18h5\" stroke=\"#fff\" stroke-linejoin=\"miter\"/></g>", "r": "<g id=\"black-rook\" class=\"black rook\" fill=\"#000\" fill-rule=\"evenodd\" stroke=\"#000\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M9 39h27v-3H9v3zM12.5 32l1.5-2.5h17l1.5 2.5h-20zM12 36v-4h21v4H12z\" stroke-linecap=\"butt\"/><path d=\"M14 29.5v-13h17v13H14z\" stroke-linecap=\"butt\" stroke-linejoin=\"miter\"/><path d=\"M14 16.5L11 14h23l-3 2.5H14zM11 14V9h4v2h5V9h5v2h5V9h4v5H11z\" stroke-linecap=\"butt\"/><path d=\"M12 35.5h21M13 31.5h19M14 29.5h17M14 16.5h17M11 14h23\" fill=\"none\" stroke=\"#fff\" stroke-width=\"1\" stroke-linejoin=\"miter\"/></g>", "q": "<g id=\"black-queen\" class=\"black queen\" fill=\"#000\" fill-rule=\"evenodd\" stroke=\"#000\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><g fill=\"#000\" stroke=\"none\"><circle cx=\"6\" cy=\"12\" r=\"2.75\"/><circle cx=\"14\" cy=\"9\" r=\"2.75\"/><circle cx=\"22.5\" cy=\"8\" r=\"2.75\"/><circle cx=\"31\" cy=\"9\" r=\"2.75\"/><circle cx=\"39\" cy=\"12\" r=\"2.75\"/></g><path d=\"M9 26c8.5-1.5 21-1.5 27 0l2.5-12.5L31 25l-.3-14.1-5.2 13.6-3-14.5-3 14.5-5.2-13.6L14 25 6.5 13.5 9 26zM9 26c0 2 1.5 2 2.5 4 1 1.5 1 1 .5 3.5-1.5 1-1.5 2.5-1.5 2.5-1.5 1.5.5 2.5.5 2.5 6.5 1 16.5 1 23 0 0 0 1.5-1 0-2.5 0 0 .5-1.5-1-2.5-.5-2.5-.5-2 .5-3.5 1-2 2.5-2 2.5-4-8.5-1.5-18.5-1.5-27 0z\" stroke-linecap=\"butt\"/><path d=\"M11 38.5a35 35 1 0 0 23 0\" fill=\"none\" stroke-linecap=\"butt\"/><path d=\"M11 29a35 35 1 0 1 23 0M12.5 31.5h20M11.5 34.5a35 35 1 0 0 22 0M10.5 37.5a35 35 1 0 0 24 0\" fill=\"none\" stroke=\"#fff\"/></g>", "k": "<g id=\"black-king\" class=\"black king\" fill=\"none\" fill-rule=\"evenodd\" stroke=\"#000\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M22.5 11.63V6\" stroke-linejoin=\"miter\"/><path d=\"M22.5 25s4.5-7.5 3-10.5c0 0-1-2.5-3-2.5s-3 2.5-3 2.5c-1.5 3 3 10.5 3 10.5\" fill=\"#000\" stroke-linecap=\"butt\" stroke-linejoin=\"miter\"/><path d=\"M11.5 37c5.5 3.5 15.5 3.5 21 0v-7s9-4.5 6-10.5c-4-6.5-13.5-3.5-16 4V27v-3.5c-3.5-7.5-13-10.5-16-4-3 6 5 10 5 10V37z\" fill=\"#000\"/><path d=\"M20 8h5\" stroke-linejoin=\"miter\"/><path d=\"M32 29.5s8.5-4 6.03-9.65C34.15 14 25 18 22.5 24.5l.01 2.1-.01-2.1C20 18 9.906 14 6.997 19.85c-2.497 5.65 4.853 9 4.853 9M11.5 30c5.5-3 15.5-3 21 0m-21 3.5c5.5-3 15.5-3 21 0m-21 3.5c5.5-3 15.5-3 21 0\" stroke=\"#fff\"/></g>"};
+function cbSVG(piece){ return `<svg class="cbsvg" viewBox="0 0 45 45" aria-hidden="true">${CBURNETT[piece]}</svg>`; }
 
 </script>
 <script>
@@ -859,12 +816,7 @@ function drawBoard(){
     if(T.hintSq===idx) sq.classList.add('hint');
     const piece=T.state.sq[idx];
     if(piece){
-      if(SETTINGS.style==='classic'){
-        const w=el('span','pc '+(piece===piece.toUpperCase()?'w':'b')); w.innerHTML=pieceSVG(piece); sq.appendChild(w);
-      } else {
-        const gm = SETTINGS.style==='solid'?GLYPH_SOLID:(SETTINGS.style==='letters'?GLYPH_LETTER:GLYPH);
-        sq.appendChild(el('span','pc '+(piece===piece.toUpperCase()?'w':'b'), gm[piece]));
-      }
+      const w=el('span','pc'); w.innerHTML=cbSVG(piece); sq.appendChild(w);
     }
     if(T.legal && T.legal.has(idx)) sq.classList.add(piece?'ring':'dot2');
     // coordinates on edges
@@ -901,7 +853,7 @@ function beginInteract(idx, ev){
   const pcEl=sq && sq.querySelector('.pc'); if(!pcEl) return;
   const rect=$('#board').getBoundingClientRect(); const cell=rect.width/8;
   const ghost=pcEl.cloneNode(true); ghost.className='pc ghost '+(piece===piece.toUpperCase()?'w':'b');
-  ghost.style.cssText=`position:fixed;width:${cell}px;height:${cell}px;pointer-events:none;z-index:60;display:flex;align-items:center;justify-content:center;font-size:calc(${cell}px*.78*var(--pieceScale,1));`;
+  ghost.style.cssText=`position:fixed;width:${cell}px;height:${cell}px;pointer-events:none;z-index:60;display:flex;align-items:center;justify-content:center;`;
   document.body.appendChild(ghost); pcEl.style.visibility='hidden';
   document.body.classList.add('dragging');
   _drag={from:idx, ghost, srcEl:pcEl, cell, moved:false};
@@ -953,8 +905,7 @@ function askPromo(from,to){
   ['q','r','b','n'].forEach(pc=>{
     const sym = white?pc.toUpperCase():pc;
     const btn=el('button'); 
-    if(SETTINGS.style==='classic') btn.innerHTML=pieceSVG(sym);
-    else btn.textContent=GLYPH[sym];
+    btn.innerHTML=cbSVG(sym);
     btn.onclick=()=>{ wrap.classList.add('hidden');
       if(T.an){ T.an.stack.push(idxName(from)+idxName(to)+pc); analyzeNow(); }
       else tryMove(idxName(from)+idxName(to)+pc); };
@@ -1259,24 +1210,11 @@ async function importScannedDoc(doc){
   renderHome(); show('home');
 }
 
-// ── Appearance settings ─────────────────────────────────────────────────────
-const SETTINGS = { board:'wood', style:'classic', size:1, depth:0 };
-(function loadSettings(){ try{ Object.assign(SETTINGS, JSON.parse(localStorage.getItem('wp_look')||'{}')); }catch(e){} })();
+// ── Settings (just solve depth) ─────────────────────────────────────────────
+const SETTINGS = { depth:0 };
+(function loadSettings(){ try{ const s=JSON.parse(localStorage.getItem('wp_look')||'{}'); if(s.depth!=null) SETTINGS.depth=+s.depth; }catch(e){} })();
 function saveSettings(){ try{ localStorage.setItem('wp_look', JSON.stringify(SETTINGS)); }catch(e){} }
-function applySettings(){
-  const t = BOARD_THEMES[SETTINGS.board] || BOARD_THEMES.wood;
-  document.documentElement.style.setProperty('--light', t.light);
-  document.documentElement.style.setProperty('--dark', t.dark);
-  const b = document.getElementById('board');
-  if(b){ b.classList.remove('style-solid','style-outline','style-letters'); b.classList.add('style-'+SETTINGS.style);
-         b.style.setProperty('--pieceScale', SETTINGS.size); }
-  const bo=$('#optBoard'), st=$('#optStyle'), sz=$('#optSize');
-  if(bo) bo.value=SETTINGS.board; if(st) st.value=SETTINGS.style; if(sz) sz.value=SETTINGS.size;
-  const dp=$('#optDepth'); if(dp) dp.value=String(SETTINGS.depth||0);
-}
-$('#optBoard').onchange = e=>{ SETTINGS.board=e.target.value; saveSettings(); applySettings(); };
-$('#optStyle').onchange = e=>{ SETTINGS.style=e.target.value; saveSettings(); applySettings(); if(T) drawBoard(); };
-$('#optSize').oninput   = e=>{ SETTINGS.size=+e.target.value; saveSettings(); applySettings(); };
+function applySettings(){ const dp=$('#optDepth'); if(dp) dp.value=String(SETTINGS.depth||0); }
 $('#optDepth').onchange = e=>{ SETTINGS.depth=+e.target.value; saveSettings();
   // apply to the current puzzle straight away
   if(T && T.active && !T.solved){ const d=SETTINGS.depth, first=S.solverFirst?0:1;
@@ -1398,7 +1336,7 @@ $('#restoreFile').onchange = async ()=>{
     const clash = doc.sets.filter(s=>existing.has(s.id)).length;
     if(clash && !confirm(`Replace ${clash} set${clash===1?'':'s'} on this device with the backup's version?`)) return;
     for(const s of doc.sets){ if(s && s.id && Array.isArray(s.puzzles)) await DB.put(s); }
-    if(doc.settings){ Object.assign(SETTINGS, doc.settings); saveSettings(); applySettings(); }
+    if(doc.settings && doc.settings.depth!=null){ SETTINGS.depth=+doc.settings.depth; saveSettings(); applySettings(); }
     toast(`Restored ${doc.sets.length} set${doc.sets.length===1?'':'s'}`); renderHome(); show('home');
   }catch(e){ console.error(e); toast('Could not read that backup'); }
 };

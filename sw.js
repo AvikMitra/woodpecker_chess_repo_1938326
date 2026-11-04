@@ -1,6 +1,6 @@
 // Woodpecker service worker: makes the app open offline once it has been loaded.
 // Your sets and progress live in IndexedDB, not here.
-const CACHE = 'woodpecker-v1';
+const CACHE = 'woodpecker-v3';
 const SHELL = ['./', './index.html', './manifest.webmanifest',
                './icon-192.png', './icon-512.png', './apple-touch-icon.png'];
 const ENGINE = 'https://cdnjs.cloudflare.com/ajax/libs/stockfish.js/10.0.2/stockfish.js';
